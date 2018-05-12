@@ -66,7 +66,8 @@ public class Binarizer {
         }
         String[] siblingsToKeep = identifier.split("/");
         StringBuilder builder = new StringBuilder();
-        for (int i = siblingsToKeep.length - markovOrder; i < siblingsToKeep.length; i++) {
+        int startIndex = siblingsToKeep.length - markovOrder < 0 ? 0 :  siblingsToKeep.length - markovOrder;
+        for (int i = startIndex; i < siblingsToKeep.length; i++) {
             builder.append(siblingsToKeep[i]);
         }
         return siblingsToKeep[0] + "/" + builder.toString() + "/";
