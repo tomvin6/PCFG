@@ -63,6 +63,21 @@ public class Node {
 		setIdentifier(sID);
 	}
 
+	public Node(String sID, boolean isRoot, Node parent) {
+		super();
+		setIdentifier(sID);
+		setParent(parent);
+		setRoot(isRoot);
+	}
+
+	public Node(String sID, boolean isRoot, Node parent, List<Node> children) {
+		super();
+		setIdentifier(sID);
+		setParent(parent);
+		setRoot(isRoot);
+		this.m_lstDaughters = children;
+	}
+
 	public Object clone()
 	{
 		Node n = new Node(getIdentifier());

@@ -13,15 +13,15 @@ import utils.CountMap;
 
 
 /**
- * 
+ *
  * @author Reut Tsarfaty
- * 
+ *
  * CLASS: Train
- * 
+ *
  * Definition: a learning component
  * Role: reads off a grammar from a treebank
  * Responsibility: keeps track of rule counts
- * 
+ *
  */
 
 public class Train {
@@ -31,35 +31,35 @@ public class Train {
      * Implementation of a singleton pattern
      * Avoids redundant instances in memory 
      */
-	public static Train m_singTrainer = null;
-	    
-	public static Train getInstance()
-	{
-		if (m_singTrainer == null)
-		{
-			m_singTrainer = new Train();
-		}
-		return m_singTrainer;
-	}
-	
-	public static void main(String[] args) {
+    public static Train m_singTrainer = null;
 
-	}
-	
-	public Grammar train(Treebank myTreebank)
-	{
-		Grammar myGrammar = new Grammar();
-		for (int i = 0; i < myTreebank.size(); i++) {
-			Tree myTree = myTreebank.getAnalyses().get(i);
-			List<Rule> theRules = getRules(myTree);
-			myGrammar.addAll(theRules);
-		}
-		calcLexicalRuleProbabilities(myGrammar);
-		calcSyntacticRuleProbabilities(myGrammar);
-		return myGrammar;
-	}
+    public static Train getInstance()
+    {
+        if (m_singTrainer == null)
+        {
+            m_singTrainer = new Train();
+        }
+        return m_singTrainer;
+    }
 
-	private void calcSyntacticRuleProbabilities(Grammar myGrammar) {
+    public static void main(String[] args) {
+
+    }
+
+    public Grammar train(Treebank myTreebank)
+    {
+        Grammar myGrammar = new Grammar();
+        for (int i = 0; i < myTreebank.size(); i++) {
+            Tree myTree = myTreebank.getAnalyses().get(i);
+            List<Rule> theRules = getRules(myTree);
+            myGrammar.addAll(theRules);
+        }
+        calcLexicalRuleProbabilities(myGrammar);
+        calcSyntacticRuleProbabilities(myGrammar);
+        return myGrammar;
+    }
+
+    private void calcSyntacticRuleProbabilities(Grammar myGrammar) {
 //		Set<Rule> syntacticRules = (Set<Rule>) myGrammar.getSyntacticRules();
 //		CountMap<Rule> ruleCounts = (CountMap<Rule>) myGrammar.getRuleCounts();
 //		for (Rule r : syntacticRules) {
@@ -67,24 +67,24 @@ public class Train {
 //				Integer integer = ruleCounts.get(r);
 //			}
 //		}
-	}
+    }
 
-	private void calcLexicalRuleProbabilities(Grammar grammar) {
-		Map<String, Set<Rule>> lexicalEntries = grammar.getLexicalEntries();
-		CountMap<Rule> ruleCounts = (CountMap<Rule>) grammar.getRuleCounts();
-		int denominator = 0;
-		for (Map.Entry<String, Set<Rule>> item : lexicalEntries.entrySet()) {
-			denominator = 0;
-			for (Rule rule : item.getValue()) {
-				if (ruleCounts.containsKey(rule)) {
-					denominator += ruleCounts.get(rule);
-				}
-			}
-			for (Rule rule : item.getValue()) {
-				rule.setMinusLogProb(-Math.log(1.0 * ruleCounts.get(rule) / denominator));
-			}
-		}
-	}
+    private void calcLexicalRuleProbabilities(Grammar grammar) {
+        Map<String, Set<Rule>> lexicalEntries = grammar.getLexicalEntries();
+        CountMap<Rule> ruleCounts = (CountMap<Rule>) grammar.getRuleCounts();
+        int denominator = 0;
+        for (Map.Entry<String, Set<Rule>> item : lexicalEntries.entrySet()) {
+            denominator = 0;
+            for (Rule rule : item.getValue()) {
+                if (ruleCounts.containsKey(rule)) {
+                    denominator += ruleCounts.get(rule);
+                }
+            }
+            for (Rule rule : item.getValue()) {
+                rule.setMinusLogProb(-Math.log(1.0 * ruleCounts.get(rule) / denominator));
+            }
+        }
+    }
 
 //	private Integer getDenominator(CountMap<Rule> ruleCounts, String key, Set<String> nonTerminalSymbols) {
 //		Integer sum = 0;
@@ -96,34 +96,34 @@ public class Train {
 //	}
 
 
-	public List<Rule> getRules(Tree myTree)
-	{
-		List<Rule> theRules = new ArrayList<Rule>();
-		
-		List<Node> myNodes = myTree.getNodes();
-		for (int j = 0; j < myNodes.size(); j++) {
-			Node myNode = myNodes.get(j);
-			if (myNode.isInternal())
-			{
-				Event eLHS = new Event(myNode.getIdentifier());
-				Iterator<Node> theDaughters = myNode.getDaughters().iterator();
-				StringBuffer sb = new StringBuffer();
-				while (theDaughters.hasNext()) {
-					Node n = (Node) theDaughters.next();
-					sb.append(n.getIdentifier());
-					if (theDaughters.hasNext())
-						sb.append(" ");
-				}
-				Event eRHS = new Event (sb.toString());
-				Rule theRule = new Rule(eLHS, eRHS);
-				if (myNode.isPreTerminal())
-					theRule.setLexical(true);
-				if (myNode.isRoot())
-					theRule.setTop(true);
-				theRules.add(theRule);
-			}	
-		}
-		return theRules;
-	}
-	
+    public List<Rule> getRules(Tree myTree)
+    {
+        List<Rule> theRules = new ArrayList<Rule>();
+
+        List<Node> myNodes = myTree.getNodes();
+        for (int j = 0; j < myNodes.size(); j++) {
+            Node myNode = myNodes.get(j);
+            if (myNode.isInternal())
+            {
+                Event eLHS = new Event(myNode.getIdentifier());
+                Iterator<Node> theDaughters = myNode.getDaughters().iterator();
+                StringBuffer sb = new StringBuffer();
+                while (theDaughters.hasNext()) {
+                    Node n = (Node) theDaughters.next();
+                    sb.append(n.getIdentifier());
+                    if (theDaughters.hasNext())
+                        sb.append(" ");
+                }
+                Event eRHS = new Event (sb.toString());
+                Rule theRule = new Rule(eLHS, eRHS);
+                if (myNode.isPreTerminal())
+                    theRule.setLexical(true);
+                if (myNode.isRoot())
+                    theRule.setTop(true);
+                theRules.add(theRule);
+            }
+        }
+        return theRules;
+    }
+
 }

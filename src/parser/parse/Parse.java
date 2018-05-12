@@ -11,6 +11,7 @@ import java.util.Set;
 import bracketimport.TreebankReader;
 
 import decode.Decode;
+import parser.parse.Binarizer;
 import train.Train;
 
 import tree.Tree;
@@ -49,16 +50,18 @@ public class Parse {
 		Treebank myGoldTreebank = TreebankReader.getInstance().read(true, args[0]);
 		Treebank myTrainTreebank = TreebankReader.getInstance().read(true, args[1]);
 		
-		// 2. transform trees
-		// TODO
-		
+		// 2. transform trees to binary trees
+		Binarizer binarizer = new Binarizer();
+		Treebank myBinaryGoldTreebank = binarizer.binarizeTreebank(myGoldTreebank);
+		Treebank myBinaryTrainTreebank = binarizer.binarizeTreebank(myTrainTreebank);
+
 		// 3. train
-		Grammar myGrammar = Train.getInstance().train(myTrainTreebank);
+		Grammar myGrammar = Train.getInstance().train(myBinaryTrainTreebank);
 		
 		// 4. decode
 		List<Tree> myParseTrees = new ArrayList<Tree>();		
-		for (int i = 0; i < myGoldTreebank.size(); i++) {
-			List<String> mySentence = myGoldTreebank.getAnalyses().get(i).getYield();
+		for (int i = 0; i < myBinaryGoldTreebank.size(); i++) {
+			List<String> mySentence = myBinaryGoldTreebank.getAnalyses().get(i).getYield();
 			Tree myParseTree = Decode.getInstance(myGrammar).decode(mySentence);
 			myParseTrees.add(myParseTree);
 		}
