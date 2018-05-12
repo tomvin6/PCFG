@@ -7,11 +7,11 @@ import java.util.*;
 
 public class Binarizer {
 
-	public Treebank binarizeTreebank(Treebank treebank) {
+	public Treebank binarizeTreebank(Treebank treebank, int markovOrder) {
 		Treebank transformedTreebank = new Treebank();
 		for (int i = 0; i < treebank.size(); i++) {
 			Tree myTree = treebank.getAnalyses().get(i);
-			tree.Node rootBinaryTreeNode = binarizeTree(myTree.getRoot(), 0);
+			tree.Node rootBinaryTreeNode = binarizeTree(myTree.getRoot(), markovOrder);
 			Tree binaryTree = new Tree(rootBinaryTreeNode);
 			transformedTreebank.add(binaryTree);
 		}
@@ -33,7 +33,7 @@ public class Binarizer {
 			return newNode; // single child OR leaf case
 		}
 		// we have more than one child
-		String uniqueLabel = "" + root.getIdentifier();
+		String uniqueLabel = root.getIdentifier() + "@" + "/";
 		tree.Node newRoot = handleMultipleCase(root, 0, uniqueLabel, markovModel);
 		return newRoot;
 	}
@@ -45,7 +45,7 @@ public class Binarizer {
 		binaryChildren.add(binarizeTree(leftChild, markovModel));
 		// handle right child and attach as right sub tree
 		if (childNumber < root.getDaughters().size() - 1) { // exist right child
-			String newLabel = label + "/" + leftChild.getIdentifier();
+			String newLabel = getHorizontalMarkovAnnotation(label + leftChild.getIdentifier(), markovModel);
 			tree.Node rightChild = handleMultipleCase(root, childNumber + 1, newLabel, markovModel);
 			binaryChildren.add(rightChild);
 		}
@@ -59,4 +59,16 @@ public class Binarizer {
 			return newNode;
 		}
 	}
+
+    private String getHorizontalMarkovAnnotation(String identifier, int markovOrder) {
+	    if (markovOrder == 0) {
+	        return "";
+        }
+        String[] siblingsToKeep = identifier.split("/");
+        StringBuilder builder = new StringBuilder();
+        for (int i = siblingsToKeep.length - markovOrder; i < siblingsToKeep.length; i++) {
+            builder.append(siblingsToKeep[i]);
+        }
+        return siblingsToKeep[0] + "/" + builder.toString() + "/";
+    }
 }
