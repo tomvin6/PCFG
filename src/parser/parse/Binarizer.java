@@ -33,43 +33,43 @@ public class Binarizer {
 			return newNode; // single child OR leaf case
 		}
 		// we have more than one child
-		String uniqueLabel = root.getIdentifier() + "@" + "/";
+		String uniqueLabel = root.getIdentifier();
 		tree.Node newRoot = handleMultipleCase(root, 0, uniqueLabel, markovModel);
 		return newRoot;
 	}
 
-	private tree.Node handleMultipleCase(tree.Node root, int childNumber, String label, int markovModel) {
+	private tree.Node handleMultipleCase(tree.Node root, int childNumber, String parentLabel, int markovModel) {
 		// handle left child and attach as left subtree
 		List<tree.Node> binaryChildren = new LinkedList<tree.Node>();
 		tree.Node leftChild = root.getDaughters().get(childNumber);
 		binaryChildren.add(binarizeTree(leftChild, markovModel));
 		// handle right child and attach as right sub tree
 		if (childNumber < root.getDaughters().size() - 1) { // exist right child
-			String newLabel = getHorizontalMarkovAnnotation(label + leftChild.getIdentifier(), markovModel);
+			String newLabel = getHorizontalMarkovAnnotation(parentLabel, leftChild.getIdentifier(), markovModel);
 			tree.Node rightChild = handleMultipleCase(root, childNumber + 1, newLabel, markovModel);
 			binaryChildren.add(rightChild);
 		}
 		// if we have only one child, return it
 		if (binaryChildren.size() == 1) {
-			return leftChild;
+			return binaryChildren.get(0);
 		} else { // create an internal node to hold left and right children
-			Node newNode = new tree.Node(label, root.isRoot(), root.getParent(), binaryChildren);
+			Node newNode = new tree.Node(parentLabel, root.isRoot(), root.getParent(), binaryChildren);
 			binaryChildren.get(0).setParent(newNode); // update children parents
 			binaryChildren.get(1).setParent(newNode);
 			return newNode;
 		}
 	}
 
-    private String getHorizontalMarkovAnnotation(String identifier, int markovOrder) {
-	    if (markovOrder == 0) {
-	        return "";
+    private String getHorizontalMarkovAnnotation(String parent, String sibling, int markovOrder) {
+		if (markovOrder == 0) {
+			return parent;
+		}
+		StringBuilder markovSiblingBuilder = new StringBuilder();
+		String[] siblingsToKeep = sibling.split("/");
+		int startIndex = siblingsToKeep.length - markovOrder < 0 ? 0 :  siblingsToKeep.length - markovOrder;
+		for (int i = startIndex; i < siblingsToKeep.length; i++) {
+			markovSiblingBuilder.append(siblingsToKeep[i]).append("/");
         }
-        String[] siblingsToKeep = identifier.split("/");
-        StringBuilder builder = new StringBuilder();
-        int startIndex = siblingsToKeep.length - markovOrder < 0 ? 0 :  siblingsToKeep.length - markovOrder;
-        for (int i = startIndex; i < siblingsToKeep.length; i++) {
-            builder.append(siblingsToKeep[i]);
-        }
-        return siblingsToKeep[0] + "/" + builder.toString() + "/";
+        return parent.split("/")[0] + "/" + markovSiblingBuilder.toString();
     }
 }
