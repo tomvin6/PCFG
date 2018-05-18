@@ -60,13 +60,24 @@ public class Train {
     }
 
     private void calcSyntacticRuleProbabilities(Grammar myGrammar) {
-//		Set<Rule> syntacticRules = (Set<Rule>) myGrammar.getSyntacticRules();
-//		CountMap<Rule> ruleCounts = (CountMap<Rule>) myGrammar.getRuleCounts();
-//		for (Rule r : syntacticRules) {
-//			if (ruleCounts.containsKey(r)) {
-//				Integer integer = ruleCounts.get(r);
-//			}
-//		}
+		Set<Rule> syntacticRules = (Set<Rule>) myGrammar.getSyntacticRules();
+		CountMap<Rule> ruleCounts = (CountMap<Rule>) myGrammar.getRuleCounts();
+        CountMap<String> nonTerminalsCount = new CountMap<String>();
+        // count non terminals for denominators
+        for (Map.Entry<Rule, Integer> ruleCount: ruleCounts.entrySet()) {
+            if (nonTerminalsCount.containsKey(((Event)ruleCount.getKey().getLHS()).toString())) {
+                int denominator = nonTerminalsCount.get(((Event)ruleCount.getKey().getLHS()).toString()) + ruleCount.getValue();
+                nonTerminalsCount.put(((Event)ruleCount.getKey().getLHS()).toString(), denominator);
+            } else {
+                nonTerminalsCount.put(((Event)ruleCount.getKey().getLHS()).toString(), ruleCount.getValue());
+            }
+        }
+		for (Rule r : syntacticRules) {
+			if (ruleCounts.containsKey(r)) {
+                double logProb = Math.log(1.0 * ruleCounts.get(r) / nonTerminalsCount.get(((Event)r.getLHS()).toString()));
+                r.setMinusLogProb(logProb != 0 ? -logProb : 0);
+			}
+		}
     }
 
     private void calcLexicalRuleProbabilities(Grammar grammar) {
@@ -81,7 +92,8 @@ public class Train {
                 }
             }
             for (Rule rule : item.getValue()) {
-                rule.setMinusLogProb(-Math.log(1.0 * ruleCounts.get(rule) / denominator));
+                double logProb = Math.log(1.0 * ruleCounts.get(rule) / denominator);
+                rule.setMinusLogProb(logProb != 0 ? -logProb : 0);
             }
         }
     }
