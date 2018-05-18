@@ -7,6 +7,34 @@ import java.util.*;
 
 public class Binarizer {
 
+	public boolean compareTreebanks(Treebank treeband1, Treebank treeband2) {
+		for (int i = 0; i < treeband1.size(); i++) {
+			Tree myTree1 = treeband1.getAnalyses().get(i);
+			Tree myTree2 = treeband2.getAnalyses().get(i);
+			boolean isEquals = compareTrees(myTree1.getRoot(), myTree2.getRoot());
+			if (isEquals == false) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private boolean compareTrees(Node a, Node b) {
+		if (a.getDaughters().isEmpty() && b.getDaughters().isEmpty()) {
+			return true;
+		}
+		if (!a.getDaughters().isEmpty() && !b.getDaughters().isEmpty()) {
+			boolean isEqual = a.getIdentifier().equals(b.getIdentifier());
+			isEqual = isEqual && a.getDaughters().size() == b.getDaughters().size();
+			for (int i = 0; i < a.getDaughters().size(); i++) {
+				isEqual = isEqual && compareTrees(a.getDaughters().get(i), b.getDaughters().get(i));
+			}
+			return isEqual;
+		}
+		return false;
+	}
+
+
 	public Treebank binarizeTreebank(Treebank treebank, int markovOrder) {
 		Treebank transformedTreebank = new Treebank();
 		for (int i = 0; i < treebank.size(); i++) {
@@ -16,6 +44,36 @@ public class Binarizer {
 			transformedTreebank.add(binaryTree);
 		}
 		return transformedTreebank;
+	}
+
+	public Treebank undoBinarizeForTreebank(Treebank treebank, int markovOrder) {
+		Treebank transformedTreebank = new Treebank();
+		for (int i = 0; i < treebank.size(); i++) {
+			Tree myTree = treebank.getAnalyses().get(i);
+			tree.Node rootBinaryTreeNode = undoBinarizationForTree(myTree.getRoot());
+			Tree binaryTree = new Tree(rootBinaryTreeNode);
+			transformedTreebank.add(binaryTree);
+		}
+		return transformedTreebank;
+	}
+
+	// this method undo binarization process for a single tree
+	private Node undoBinarizationForTree(Node root) {
+		if (root.getDaughters().isEmpty()) {
+			return new Node(root.getIdentifier(), root.isRoot(), root.getParent(), root.getDaughters());
+		}
+		Node newRoot = new Node(root.getIdentifier(), root.isRoot(), root.getParent());
+		for (Node child : root.getDaughters()) {
+			Node originalChildSubTree = undoBinarizationForTree(child);
+			if (originalChildSubTree.getIdentifier().startsWith("@")) {
+				for (Node subTreeChild : originalChildSubTree.getDaughters()) {
+					newRoot.addDaughter(subTreeChild);
+				}
+			} else {
+				newRoot.addDaughter(originalChildSubTree);
+			}
+		}
+		return newRoot;
 	}
 
 	private Node binarizeTree(Node root, int markovModel) {
@@ -37,50 +95,23 @@ public class Binarizer {
 			List<tree.Node> binaryChildren = new LinkedList<tree.Node>();
 			Node newNode = new tree.Node(root.getIdentifier(), root.isRoot(), root.getParent(), binaryChildren);
 			for (Node child : root.getDaughters()) {
-				binaryChildren.add(binarizeTree(child, markovModel));
+				Node node = binarizeTree(child, markovModel);
+				node.setParent(newNode);
+				binaryChildren.add(node);
 			}
-			binaryChildren.get(0).setParent(newNode); // update children parents
-			binaryChildren.get(1).setParent(newNode);
 			return newNode;
 		} else {
-			tree.Node newRoot = handleMultipleCase(root, 0, root.getIdentifier() + "", markovModel);
-			return newRoot;
+			return handleMultipleCase(root, 0, root.getIdentifier() + "", markovModel);
 		}
 	}
 
-//	private tree.Node iterativeHandleMultipleCase(tree.Node root, int markovModel) {
-//		List<Node> daughters = root.getDaughters();
-//		List<tree.Node> binaryChildren = new LinkedList<tree.Node>();
-//		// handle left child
-//		tree.Node leftChild = root.getDaughters().get(0);
-//		binaryChildren.add(binarizeTree(leftChild, markovModel));
-//
-//		if (daughters.size() == 2) { // exactly two children
-//			tree.Node rightChild = root.getDaughters().get(1);
-//			binaryChildren.add(binarizeTree(rightChild, markovModel));
-//		} else { // more than 2 children
-//			for (int childNum = 1; childNum < daughters.size() - 2; childNum++) {
-//				Node newParentNode = new tree.Node(getNewNodeName(root, markovModel), root.isRoot(), root.getParent());
-//				binaryChildren.add(newParentNode); // right child in parent
-//				Node tmpChild = binarizeTree(daughters.get(childNum), markovModel);
-//				newParentNode.addDaughter(tmpChild);
-//
-//
-//
-//
-//
-//
-//				binaryChildren.get(0).setParent(newParentNode); // update children parents
-//				binaryChildren.get(1).setParent(newParentNode);
-//
-//
-//			}
-//		}
-//	}
-//
+
 	private String getNewNodeName(Node root, int childNum, int markovOrder) {
+		if (childNum == 0) {
+			return root.getIdentifier(); // mark original node
+		}
 		if (markovOrder == 0) {
-			return root.getIdentifier() + "";
+			return "@" + root.getIdentifier();
 		}
 		StringBuilder markovSiblingBuilder = new StringBuilder();
 		List<Node> daughters = root.getDaughters();
@@ -88,7 +119,7 @@ public class Binarizer {
 		for (int i = startIndex; i < childNum; i++) {
 			markovSiblingBuilder.append(daughters.get(i)).append("/");
 		}
-		return root.getIdentifier() + "" + "/" + markovSiblingBuilder.toString();
+		return "@" + root.getIdentifier() + "/" + markovSiblingBuilder.toString();
 	}
 
 	private tree.Node handleMultipleCase(tree.Node root, int childNumber, String originalParentName, int markovModel) {
@@ -115,18 +146,18 @@ public class Binarizer {
 		}
 	}
 
-    private String getHorizontalMarkovAnnotation(String parent, String sibling, int markovOrder) {
-		if (markovOrder == 0) {
-			return parent;
-		}
-		StringBuilder markovSiblingBuilder = new StringBuilder();
-		String[] siblingsToKeep = sibling.split("/");
-		int startIndex = markovOrder < 0 ? 0 :  siblingsToKeep.length - markovOrder;
-		for (int i = startIndex; i < siblingsToKeep.length; i++) {
-			markovSiblingBuilder.append(siblingsToKeep[i]).append("/");
-        }
-        return parent.split("/")[0] + "/" + markovSiblingBuilder.toString();
-    }
+//	private String getHorizontalMarkovAnnotation(String parent, String sibling, int markovOrder) {
+//		if (markovOrder == 0) {
+//			return parent;
+//		}
+//		StringBuilder markovSiblingBuilder = new StringBuilder();
+//		String[] siblingsToKeep = sibling.split("/");
+//		int startIndex = markovOrder < 0 ? 0 :  siblingsToKeep.length - markovOrder;
+//		for (int i = startIndex; i < siblingsToKeep.length; i++) {
+//			markovSiblingBuilder.append(siblingsToKeep[i]).append("/");
+//		}
+//		return parent.split("/")[0] + "/" + markovSiblingBuilder.toString();
+//	}
 
 
 }
