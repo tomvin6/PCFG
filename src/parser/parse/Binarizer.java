@@ -66,10 +66,18 @@ public class Binarizer {
 		}
 		StringBuilder markovSiblingBuilder = new StringBuilder();
 		String[] siblingsToKeep = sibling.split("/");
-		int startIndex = siblingsToKeep.length - markovOrder < 0 ? 0 :  siblingsToKeep.length - markovOrder;
+		int startIndex = getStartIndex(siblingsToKeep.length, markovOrder);
 		for (int i = startIndex; i < siblingsToKeep.length; i++) {
 			markovSiblingBuilder.append(siblingsToKeep[i]).append("/");
         }
         return parent.split("/")[0] + "/" + markovSiblingBuilder.toString();
     }
+
+    private int getStartIndex(int siblingSize, int markovOrder) {
+		if (markovOrder == - 1) {
+			return 0;
+		} else {
+			return siblingSize - (markovOrder < 0 ? 0 :  siblingSize - markovOrder);
+		}
+	}
 }
