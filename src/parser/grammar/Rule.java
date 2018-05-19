@@ -21,8 +21,8 @@ import java.util.Set;
 
 public class Rule {
 
-	protected Event m_LHS = null;
-	protected Event m_RHS = null;
+	protected grammar.Event m_LHS = null;
+	protected grammar.Event m_RHS = null;
 	protected double m_dMinusLogProb = Double.POSITIVE_INFINITY;
 
 	protected boolean m_bLexical = false;
@@ -64,7 +64,7 @@ public class Rule {
 		setRHS(e2);
 		setLexical(bLex);
 	}
-	
+
 	public boolean isTop() {
 		return m_bTop;
 	}
@@ -82,13 +82,13 @@ public class Rule {
 		Event e2 = new Event ("A");
 		Event e3 = new Event ("B C");
 		Event e4 = new Event ("B C");
-		
+
 		Rule r1 = new Rule(e1,e3);
 		Rule r2 = new Rule(e2,e4);
 
 		System.out.println("Rule 1: " + r1);
 		System.out.println("Rule 2: " + r2);
-		
+
 		Set<Rule> set = new HashSet<Rule>();
 		set.add(r1);
 		set.add(r2);

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import parser.decode.CKYDecoder;
 import tree.Node;
 import tree.Terminal;
 import tree.Tree;
@@ -16,7 +17,7 @@ public class Decode {
 
 	public static Set<Rule> m_setGrammarRules = null;
 	public static Map<String, Set<Rule>> m_mapLexicalRules = null;
-	
+	private static Grammar _g;
     /**
      * Implementation of a singleton pattern
      * Avoids redundant instances in memory 
@@ -25,6 +26,7 @@ public class Decode {
 	    
 	public static Decode getInstance(Grammar g)
 	{
+		_g = g;
 		if (m_singDecoder == null)
 		{
 			m_singDecoder = new Decode();
@@ -50,8 +52,10 @@ public class Decode {
 		}
 		
 		// TODO: CYK decoder
-		//       if CYK fails, 
-		//       use the baseline outcome
+		String [] words = new String[]{ "EFRWT","ANFIM","MGIEIM","M"};
+		//String[] words = input.toArray(new String[input.size()]);
+		CKYDecoder decoder = new CKYDecoder(words,_g);
+		System.out.println();
 		
 		return t;
 		
