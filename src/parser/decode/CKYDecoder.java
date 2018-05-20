@@ -16,6 +16,11 @@ public class CKYDecoder
         public Cell right;
         public double prob;
 
+        public Cell()
+        {
+            rulesMatches = new HashSet<grammar.Rule>();
+        }
+
     }
     private Cell[][] chart;
     private Set<grammar.Rule> _sRules;
@@ -36,67 +41,35 @@ public class CKYDecoder
        // get all rules for the table
         for(int i = 1; i < chart.length; i++)
         {
-            for(int j = 0 ; j < chart.length - i; j++)
+            for(int j = 0 ; j <chart.length - i; j++)
             {
-                for(int k = 0 ; k < j ;k++)
+                int z = 0;
+                int t = i + j;
+                Set<grammar.Rule> ruleMatches = new HashSet<grammar.Rule>();
+                for(int k = i - 1; k >= 0 && z < i && t >= 0; k-- )// column down
                 {
-                    Cell cell = new Cell();
-                    cell.rulesMatches = RulesBelongToo(chart[j][k],chart[k][i]);
-                    chart[j][i] = cell;
+                    Cell cell;
+                    if(chart[i][j] == null)
+                    {
+                        cell = new Cell();
+                        chart[i][j] = cell;
+                    }
+                    cell = chart[i][j];
+                    cell.rulesMatches.addAll(RulesBelongToo(chart[k][j],chart[z][t]));
+                    chart[i][j] = cell;
+                    z++;
+                    t--;
                 }
+
             }
         }
     }
 
-    public boolean processString(String [] w, Grammar g)
-    {
-        int length = w.length;
-        chart = new Cell[w.length][w.length];
-
-        for (int i = 0; i < length; ++i)
-        {
-            for (int j = 0; j < length; ++j)
-                chart[i][j] = new Cell();
-        }
-
-        for (int i = 0; i < length; ++i)
-        {
-            HashSet<String> keys = (HashSet<String>)g.getTerminalSymbols();
-            for (String key : keys)
-            {
-                if(keys.contains(w[i]))
-                {
-                    Cell cell = new Cell();
-                    cell.word = w[i];
-                    chart[i][i] = cell;
-                }
-            }
-        }
-        for (int l = 2; l <= length; ++l)
-        {
-            for (int i = 0; i <= length - l; ++i)
-            {
-                int j = i + l - 1;
-                for (int k = i; k <= j - 1; ++k)
-                {
-                    Cell cell = new Cell();
-                    cell.rulesMatches = RulesBelongToo(chart[i][k],chart[k+1][j]);
-                }
-            }
-        }
-        if (chart[0][length - 1].rulesMatches.contains(g.getStartSymbols())) // we started from 0
-            return true;
-
-        return false;
-    }
 
     private Set<grammar.Rule> RulesBelongToo(Cell x, Cell y)
     {
         HashSet rulesToReturn = new HashSet<grammar.Rule>();
-        if(x == null || y == null || x.rulesMatches == null || y.rulesMatches == null)
-        {
-            return  rulesToReturn;
-        }
+
         for (grammar.Rule xRule : x.rulesMatches) {
             for (grammar.Rule yRule : y.rulesMatches) {
                 List<String> e1 = xRule.getLHS().getSymbols();
