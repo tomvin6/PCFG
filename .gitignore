@@ -2,11 +2,16 @@
 ### Java template
 # Compiled class file
 *.class
-**\*.class
-**\*.ini
-**\*.MF
-**\*.project
-**\*.iml
+**/*.class
+**/*.ini
+**/*.MF
+**/*.project
+**/*.iml
+**/*.gram
+**/*.lex
+**/*.parsed
+**/*.eval
+
 # Log file
 *.log
 
