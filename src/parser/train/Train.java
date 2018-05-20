@@ -111,7 +111,72 @@ public class Train {
         }
         calcLexicalRuleProbabilities(myGrammar);
         calcSyntacticRuleProbabilities(myGrammar);
+//        SyntacticProbWithGoodTuringSmoothing(myGrammar);
+//        calcLexicalGoodTuringSmoothingProbabilities(myGrammar);
         return myGrammar;
+    }
+
+    private void SyntacticProbWithGoodTuringSmoothing(Grammar myGrammar) {
+        Set<Rule> syntacticRules = (Set<Rule>) myGrammar.getSyntacticRules();
+        CountMap<Rule> ruleCounts = (CountMap<Rule>) myGrammar.getRuleCounts();
+        CountMap<String> nonTerminalsCount = new CountMap<String>();
+        // count non terminals for denominators
+        for (Map.Entry<Rule, Integer> ruleCount: ruleCounts.entrySet()) {
+            if (nonTerminalsCount.containsKey(((Event)ruleCount.getKey().getLHS()).toString())) {
+                int denominator = nonTerminalsCount.get(((Event)ruleCount.getKey().getLHS()).toString()) + ruleCount.getValue();
+                nonTerminalsCount.put(((Event)ruleCount.getKey().getLHS()).toString(), denominator);
+            } else {
+                nonTerminalsCount.put(((Event)ruleCount.getKey().getLHS()).toString(), ruleCount.getValue());
+            }
+        }
+        // we have non terminal counts + rules count
+        // calc Nr map (the number of n-grams that occur exactly r times)
+        CountMap<Integer> nrCounts = calcNrValues(ruleCounts.entrySet());
+
+        // calc N values
+        long nSum = ruleCounts.allCounts();
+
+        // calc r* / N:
+        for (Rule r : syntacticRules) {
+            if (ruleCounts.containsKey(r)) {
+                int rCount = ruleCounts.get(r);
+                double rStar = (rCount + 1) * (nrCounts.get(rCount + 1)) / nrCounts.get(rCount);
+                double logProb = Math.log(1.0 * rStar / nSum);
+                r.setMinusLogProb(logProb != 0 ? -logProb : 0);
+            }
+        }
+    }
+
+    private utils.CountMap<Integer> calcNrValues(Set<Map.Entry<Rule, Integer>> entries) {
+        CountMap<Integer> nrCounts = new CountMap<Integer>();
+        for (Map.Entry<Rule, Integer> rule: entries) {
+            if (nrCounts.containsKey(rule.getValue())) {
+                nrCounts.put(rule.getValue(), rule.getValue() + nrCounts.get(rule.getValue()));
+            } else {
+                nrCounts.put(rule.getValue(), 1);
+            }
+        }
+        return nrCounts;
+    }
+
+    private void calcLexicalGoodTuringSmoothingProbabilities(Grammar grammar) {
+        Map<String, Set<Rule>> lexicalEntries = grammar.getLexicalEntries();
+        CountMap<Rule> ruleCounts = (CountMap<Rule>) grammar.getRuleCounts();
+        int nSum = ruleCounts.allCounts();
+        // calc Nr values
+        CountMap<Integer> nrCounts = calcNrValues(ruleCounts.entrySet());
+
+        for (Map.Entry<String, Set<Rule>> item : lexicalEntries.entrySet()) {
+            for (Rule rule : item.getValue()) {
+                if (ruleCounts.containsKey(rule)) {
+                    int rCount = ruleCounts.get(rule);
+                    double rStar = (rCount + 1) * (nrCounts.get(rCount + 1)) / nrCounts.get(rCount);
+                    double logProb = Math.log(1.0 * rStar / nSum);
+                    rule.setMinusLogProb(logProb != 0 ? -logProb : 0);
+                }
+            }
+
+        }
     }
 
     private static void calcSyntacticRuleProbabilities(Grammar myGrammar) {
@@ -192,6 +257,5 @@ public class Train {
         }
         return theRules;
     }
-
 }
 
