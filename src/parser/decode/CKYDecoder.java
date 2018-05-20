@@ -119,7 +119,7 @@ public class CKYDecoder
 
     }
 
-    private class BestRuleData {
+    public class BestRuleData {
         public double minusLogProb;
         public Cell leftChildBackPointer, rightChildBackPointer;
 

@@ -259,7 +259,8 @@ public class Train {
         // iterate tree
         for (Map.Entry<Rule, CKYDecoder.BestRuleData> rule : decoder.getTopCell().rulesMatches.entrySet()) {
             if (((Event)rule.getKey().getLHS()).toString().equals("S")) { // legal parse tree
-                // todo........
+                // TODO
+                // Node root = buildTree(decoder.getTopCell());
             } else {
                 // TODO: RETURN DUMMY
             }
@@ -267,5 +268,6 @@ public class Train {
 
         System.out.println();
     }
+
 }
 
