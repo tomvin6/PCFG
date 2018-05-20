@@ -43,63 +43,6 @@ public class Train {
         return m_singTrainer;
     }
 
-    public static void main(String[] args) {
-        Grammar myGrammar = new Grammar();
-
-        List<Rule> theRules = new ArrayList<grammar.Rule>();
-
-        Event S = new Event ("S");
-        Event A = new Event("A");
-        Event B = new Event("B");
-        Event C = new Event("C");
-
-        Event e1 = new Event ("A B");
-        Event e2 = new Event ("B B");
-        Event e3 = new Event ("C C");
-        Event e4 = new Event ("C A");
-        Event e5 = new Event ("B A");
-        Event e6 = new Event ("A A");
-
-        Event t1 = new Event("a");
-        Event t2 = new Event("b");
-
-        Rule Sr = new Rule(S.toString(),e1.toString(),false,true);
-        Rule Sr2 = new Rule(S.toString(),e2.toString(),false,true);
-
-        Rule Ar =  new Rule(A.toString(),e3.toString(),false,false);
-        Rule Ar2 =  new Rule(A.toString(),e1.toString(),false,false);
-        Rule Ar3 =  new Rule(A.toString(),t1.toString(),true,false);
-
-        Rule Br =  new Rule(B.toString(),e2.toString(),false,false);
-        Rule Br2 =  new Rule(B.toString(),e4.toString(),false,false);
-        Rule Br3 =  new Rule(B.toString(),t2.toString(),true,false);
-
-        Rule Cr =  new Rule(C.toString(),e5.toString(),false,false);
-        Rule Cr2 =  new Rule(C.toString(),e6.toString(),false,false);
-        Rule Cr3 =  new Rule(C.toString(),t2.toString(),true,false);
-
-        theRules.add(Sr);
-        theRules.add(Sr2);
-        theRules.add(Ar);
-        theRules.add(Ar2);
-        theRules.add(Ar3);
-        theRules.add(Br);
-        theRules.add(Br2);
-        theRules.add(Br3);
-        theRules.add(Cr);
-        theRules.add(Cr2);
-        theRules.add(Cr3);
-
-        myGrammar.addAll(theRules);
-        calcLexicalRuleProbabilities(myGrammar);
-        calcSyntacticRuleProbabilities(myGrammar);
-
-        String [] words = new String[]{ "a","a","b","b"};
-        //String[] words = input.toArray(new String[input.size()]);
-        CKYDecoder decoder = new CKYDecoder(words,myGrammar);
-        System.out.println();
-
-    }
 
     public Grammar train(Treebank myTreebank)
      {
@@ -256,6 +199,73 @@ public class Train {
             }
         }
         return theRules;
+    }
+
+    public static void main(String[] args) {
+        Grammar myGrammar = new Grammar();
+
+        List<Rule> theRules = new ArrayList<grammar.Rule>();
+
+        Event S = new Event ("S");
+        Event A = new Event("A");
+        Event B = new Event("B");
+        Event C = new Event("C");
+
+        Event e1 = new Event ("A B");
+        Event e2 = new Event ("B B");
+        Event e3 = new Event ("C C");
+        Event e4 = new Event ("C A");
+        Event e5 = new Event ("B A");
+        Event e6 = new Event ("A A");
+
+        Event t1 = new Event("a");
+        Event t2 = new Event("b");
+
+        Rule Sr = new Rule(S.toString(),e1.toString(),false,true);
+        Rule Sr2 = new Rule(S.toString(),e2.toString(),false,true);
+
+        Rule Ar =  new Rule(A.toString(),e3.toString(),false,false);
+        Rule Ar2 =  new Rule(A.toString(),e1.toString(),false,false);
+        Rule Ar3 =  new Rule(A.toString(),t1.toString(),true,false);
+
+        Rule Br =  new Rule(B.toString(),e2.toString(),false,false);
+        Rule Br2 =  new Rule(B.toString(),e4.toString(),false,false);
+        Rule Br3 =  new Rule(B.toString(),t2.toString(),true,false);
+
+        Rule Cr =  new Rule(C.toString(),e5.toString(),false,false);
+        Rule Cr2 =  new Rule(C.toString(),e6.toString(),false,false);
+        Rule Cr3 =  new Rule(C.toString(),t2.toString(),true,false);
+
+        theRules.add(Sr);
+        theRules.add(Sr2);
+        theRules.add(Ar);
+        theRules.add(Ar2);
+        theRules.add(Ar3);
+        theRules.add(Br);
+        theRules.add(Br2);
+        theRules.add(Br3);
+        theRules.add(Cr);
+        theRules.add(Cr2);
+        theRules.add(Cr3);
+
+        myGrammar.addAll(theRules);
+        calcLexicalRuleProbabilities(myGrammar);
+        calcSyntacticRuleProbabilities(myGrammar);
+
+        String [] words = new String[]{ "a","a","b","b"};
+        //String[] words = input.toArray(new String[input.size()]);
+        CKYDecoder decoder = new CKYDecoder(words,myGrammar);
+
+        // iterate tree
+        for (Map.Entry<Rule, CKYDecoder.BestRuleData> rule : decoder.getTopCell().rulesMatches.entrySet()) {
+            if (((Event)rule.getKey().getLHS()).toString().equals("S")) { // legal parse tree
+                // todo........
+            } else {
+                // TODO: RETURN DUMMY
+            }
+        }
+
+        System.out.println();
     }
 }
 
