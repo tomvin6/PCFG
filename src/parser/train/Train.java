@@ -102,7 +102,7 @@ public class Train {
     }
 
     public Grammar train(Treebank myTreebank)
-    {
+     {
         Grammar myGrammar = new Grammar();
         for (int i = 0; i < myTreebank.size(); i++) {
             Tree myTree = myTreebank.getAnalyses().get(i);
