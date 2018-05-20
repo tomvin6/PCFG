@@ -63,7 +63,7 @@ public final class CountMap<T> extends HashMap<T, Integer> {
 		int count = 0;
 		Iterator<T> it = this.keySet().iterator();
 		   while (it.hasNext()) {
-			String key = (String) it.next();
+		   	grammar.Rule key = (grammar.Rule) it.next();
 			Integer val = this.get(key);
 			count = count+val.intValue();
 		   }
