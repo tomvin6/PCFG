@@ -14,10 +14,10 @@ import tree.Terminal;
 import tree.Tree;
 
 public class Decode {
-
+	private static CKYDecoder ckyDecoder;
 	public static Set<Rule> m_setGrammarRules = null;
 	public static Map<String, Set<Rule>> m_mapLexicalRules = null;
-	private static Grammar _g;
+
     /**
      * Implementation of a singleton pattern
      * Avoids redundant instances in memory 
@@ -26,9 +26,9 @@ public class Decode {
 	    
 	public static Decode getInstance(Grammar g)
 	{
-		_g = g;
 		if (m_singDecoder == null)
 		{
+			ckyDecoder = new CKYDecoder(g);
 			m_singDecoder = new Decode();
 			m_setGrammarRules = g.getSyntacticRules();
 			m_mapLexicalRules = g.getLexicalEntries();			
@@ -37,28 +37,24 @@ public class Decode {
 	}
     
 	public Tree decode(List<String> input){
-		
-		// Done: Baseline Decoder
-		//       Returns a flat tree with NN labels on all leaves 
-		
-		Tree t = new Tree(new Node("TOP"));
-		Iterator<String> theInput = input.iterator();
-		while (theInput.hasNext()) {
-			String theWord = (String) theInput.next();
-			Node preTerminal = new Node("NN");
-			Terminal terminal = new Terminal(theWord);
-			preTerminal.addDaughter(terminal);
-			t.getRoot().addDaughter(preTerminal);
+		Tree tree = null;
+		tree.Node root = ckyDecoder.getTreeIfExist(input);
+		if (root == null) { // RUN BASELINE
+			// Done: Baseline Decoder
+			//       Returns a flat tree with NN labels on all leaves
+			tree = new Tree(new Node("TOP"));
+			Iterator<String> theInput = input.iterator();
+			while (theInput.hasNext()) {
+				String theWord = (String) theInput.next();
+				Node preTerminal = new Node("NN");
+				Terminal terminal = new Terminal(theWord);
+				preTerminal.addDaughter(terminal);
+				tree.getRoot().addDaughter(preTerminal);
+			}
+		} else {
+			tree = new Tree(root);
 		}
-		
-		// TODO: CYK decoder
-		String [] words = new String[]{ "EFRWT","ANFIM","MGIEIM","M"};
-		//String[] words = input.toArray(new String[input.size()]);
-		CKYDecoder decoder = new CKYDecoder(words,_g);
-		System.out.println();
-		
-		return t;
-		
+		return tree;
 	}
 
 	

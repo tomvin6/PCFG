@@ -1,5 +1,6 @@
 package train;
 
+import decode.Decode;
 import grammar.Event;
 import grammar.Grammar;
 import grammar.Rule;
@@ -252,22 +253,17 @@ public class Train {
         calcLexicalRuleProbabilities(myGrammar);
         calcSyntacticRuleProbabilities(myGrammar);
 
-        String [] words = new String[]{ "a","a","b","b"};
+        List<String> words = new ArrayList<String>();
+        words.add("a");
+        words.add("a");
+        words.add("b");
+        words.add("b");
         //String[] words = input.toArray(new String[input.size()]);
-        CKYDecoder decoder = new CKYDecoder(words,myGrammar);
-
-        // iterate tree
-        for (Map.Entry<Rule, CKYDecoder.BestRuleData> rule : decoder.getTopCell().rulesMatches.entrySet()) {
-            if (((Event)rule.getKey().getLHS()).toString().equals("S")) { // legal parse tree
-                // TODO
-                // Node root = buildTree(decoder.getTopCell());
-            } else {
-                // TODO: RETURN DUMMY
-            }
-        }
-
+        Decode decoder = Decode.getInstance(myGrammar);
+        Tree decode = decoder.decode(words);
         System.out.println();
     }
+
 
 }
 

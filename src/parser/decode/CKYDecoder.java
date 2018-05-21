@@ -5,23 +5,29 @@ import grammar.Rule;
 
 import java.util.*;
 
-public class CKYDecoder
-{
-    private Cell[][] chart;
-    private Set<grammar.Rule> _sRules;
-    private Cell topCell;
+public class CKYDecoder {
+    private Grammar myGrammer;
 
-    public CKYDecoder(String [] words ,Grammar g) {
-        this.decode(words, g);
+    public CKYDecoder(Grammar g) {
+        this.myGrammer = g;
+    }
+    private Set<grammar.Rule> getLexRuleOrNN(Map<String, Set<grammar.Rule>> lexRules, String word) {
+        if (lexRules.containsKey(word)) {
+            return lexRules.get(word);
+        }
+        grammar.Rule rule = new grammar.Rule("NN", word);
+        Set<grammar.Rule> rules = new HashSet<Rule>();
+        rules.add(rule);
+        return rules;
     }
 
-    private void decode(String [] words ,Grammar g) {
-        Map<String, Set<grammar.Rule>> lexRules = g.getLexicalEntries();
-        _sRules = g.getSyntacticRules();
-        chart = new Cell[words.length][words.length];
+    private Cell runCYK(List<String> words) {
+        Map<String, Set<grammar.Rule>> lexRules = this.myGrammer.getLexicalEntries();
+        Set<grammar.Rule> _sRules = this.myGrammer.getSyntacticRules();
+        Cell[][] chart = new Cell[words.size()][words.size()];
         // init phase
-        for(int i = 0 ; i < words.length ; i++) {
-            chart[0][i] = new Cell(lexRules.get(words[i]), words[i]);
+        for(int i = 0 ; i < words.size() ; i++) {
+            chart[0][i] = new Cell(getLexRuleOrNN(lexRules, words.get(i)), words.get(i));
         }
 
         // get all rules for the table
@@ -38,14 +44,14 @@ public class CKYDecoder
                     cell = chart[i][j];
                     Cell leftChildCell = chart[k][j];
                     Cell rightChildCell = chart[z][t];
-                    Set<Rule> rules = RulesBelongToo(leftChildCell, rightChildCell);
+                    Set<Rule> rules = RulesBelongToo(_sRules, leftChildCell, rightChildCell);
                     upsertRulesToCellUsingBestProbLogic(cell, rules, leftChildCell, rightChildCell);
                     z++;
                     t--;
                 }
             }
         }
-        this.topCell = chart[chart.length - 1][0];
+        return chart[chart.length - 1][0];
     }
 
     private void upsertRulesToCellUsingBestProbLogic(Cell cell, Set<Rule> rules, Cell leftChildCell, Cell rightChildCell) {
@@ -63,8 +69,7 @@ public class CKYDecoder
         }
     }
 
-
-    private Set<grammar.Rule> RulesBelongToo(Cell x, Cell y) {
+    private Set<grammar.Rule> RulesBelongToo(Set<grammar.Rule>_sRules, Cell x, Cell y) {
         HashSet rulesToReturn = new HashSet<grammar.Rule>();
 
         for (grammar.Rule xRule : x.rulesMatches.keySet()) {
@@ -100,10 +105,6 @@ public class CKYDecoder
         return true;
     }
 
-    public Cell getTopCell() {
-        return topCell;
-    }
-
     public class Cell {
         public String word;
         public Map<grammar.Rule, BestRuleData> rulesMatches = new HashMap<Rule, BestRuleData>();
@@ -118,7 +119,6 @@ public class CKYDecoder
         }
 
     }
-
     public class BestRuleData {
         public double minusLogProb;
         public Cell leftChildBackPointer, rightChildBackPointer;
@@ -128,7 +128,56 @@ public class CKYDecoder
             this.leftChildBackPointer = leftChildBackPointer;
             this.rightChildBackPointer = rightChildBackPointer;
         }
+    }
 
+
+    public tree.Node getTreeIfExist(List<String> words) {
+        Cell topCell = this.runCYK(words);
+        // iterate tree
+        for (Map.Entry<Rule, CKYDecoder.BestRuleData> rule : topCell.rulesMatches.entrySet()) {
+            if (((grammar.Event)rule.getKey().getLHS()).toString().equals("S")) { // legal parse tree
+                tree.Node root = buildTree(topCell);
+                return root;
+            }
+        }
+        return null; // no legal tree
+    }
+
+    private static tree.Node buildTree(CKYDecoder.Cell topCell) {
+        System.out.println(topCell);
+        Map.Entry<Rule, CKYDecoder.BestRuleData> bestRule = getBestRule(topCell);
+        // it's a terminal
+        if (bestRule.getValue().rightChildBackPointer == null && bestRule.getValue().leftChildBackPointer == null) {
+            return MakeNodeContainTerminal(bestRule);
+        }
+
+        List<tree.Node> children = new LinkedList<tree.Node>();
+        children.add(buildTree(bestRule.getValue().leftChildBackPointer));
+        children.add(buildTree(bestRule.getValue().rightChildBackPointer));
+
+        tree.Node parent = new tree.Node(((grammar.Event)bestRule.getKey().getLHS()).toString(), false, null, children);
+        children.get(0).setParent(parent);
+        children.get(0).setParent(parent);
+        return parent;
+    }
+
+    private static tree.Node MakeNodeContainTerminal(Map.Entry<Rule, CKYDecoder.BestRuleData> bestRule) {
+        tree.Node parent = new tree.Node(((grammar.Event)bestRule.getKey().getLHS()).toString(), false, null);
+        tree.Node terminal = new tree.Node(((grammar.Event)bestRule.getKey().getRHS()).toString(), false, parent);
+        parent.addDaughter(terminal);
+        return parent;
+    }
+
+    private static Map.Entry<grammar.Rule, CKYDecoder.BestRuleData> getBestRule(CKYDecoder.Cell cell) {
+        double bestRuleMinusLogProb = Double.MAX_VALUE; // we need to minimize
+        Map.Entry<grammar.Rule, CKYDecoder.BestRuleData> bestRuleData = null;
+        for (Map.Entry<Rule, CKYDecoder.BestRuleData> rule : cell.rulesMatches.entrySet()) {
+            if (rule.getValue().minusLogProb < bestRuleMinusLogProb) {
+                bestRuleMinusLogProb = rule.getValue().minusLogProb;
+                bestRuleData = rule;
+            }
+        }
+        return bestRuleData;
     }
 }
 
