@@ -157,7 +157,7 @@ public class CKYDecoder {
         Cell topCell = this.runCYK(words);
         // iterate tree
         for (Map.Entry<Rule, CKYDecoder.BestRuleData> rule : topCell.rulesMatches.entrySet()) {
-            if (((grammar.Event)rule.getKey().getLHS()).toString().equals("S")) { // legal parse tree
+            if (((grammar.Event)rule.getKey().getLHS()).getSymbols().get(0).equals("S")) { // legal parse tree
                 allLegalTopCells.put(rule.getKey(), rule.getValue());
                 isLegal = true;
             }
@@ -202,6 +202,10 @@ public class CKYDecoder {
                 bestRuleMinusLogProb = rule.getValue().minusLogProb;
                 bestRuleData = rule;
             }
+        }
+        if (bestRuleData == null && !cell.rulesMatches.isEmpty()) { // probably NN word
+            bestRuleData = cell.rulesMatches.entrySet().iterator().next();
+            bestRuleData.getValue().minusLogProb = Math.log(1.0);
         }
         return bestRuleData;
     }
