@@ -152,13 +152,20 @@ public class CKYDecoder {
 
 
     public tree.Node getTreeIfExist(List<String> words) {
+        boolean isLegal = false;
+        Map<Rule, CKYDecoder.BestRuleData> allLegalTopCells = new HashMap<Rule, CKYDecoder.BestRuleData>();
         Cell topCell = this.runCYK(words);
         // iterate tree
         for (Map.Entry<Rule, CKYDecoder.BestRuleData> rule : topCell.rulesMatches.entrySet()) {
             if (((grammar.Event)rule.getKey().getLHS()).toString().equals("S")) { // legal parse tree
-                tree.Node root = buildTree(topCell);
-                return root;
+                allLegalTopCells.put(rule.getKey(), rule.getValue());
+                isLegal = true;
             }
+        }
+        if (isLegal) {
+            topCell.rulesMatches = allLegalTopCells;
+            tree.Node root = buildTree(topCell);
+            return root;
         }
         return null; // no legal tree
     }
