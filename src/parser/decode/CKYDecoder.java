@@ -24,6 +24,7 @@ public class CKYDecoder {
     private Cell runCYK(List<String> words) {
         Map<String, Set<grammar.Rule>> lexRules = this.myGrammer.getLexicalEntries();
         Set<grammar.Rule> _sRules = this.myGrammer.getSyntacticRules();
+        Map<String, Set<grammar.Rule>> rulesMap =  buildRulesMap(_sRules);
         Cell[][] chart = new Cell[words.size()][words.size()];
         // init phase
         for(int i = 0 ; i < words.size() ; i++) {
@@ -44,7 +45,7 @@ public class CKYDecoder {
                     cell = chart[i][j];
                     Cell leftChildCell = chart[k][j];
                     Cell rightChildCell = chart[z][t];
-                    Set<Rule> rules = RulesBelongToo(_sRules, leftChildCell, rightChildCell);
+                    Set<Rule> rules = RulesBelongToo(leftChildCell, rightChildCell, rulesMap);
                     upsertRulesToCellUsingBestProbLogic(cell, rules, leftChildCell, rightChildCell);
                     z++;
                     t--;
@@ -52,6 +53,20 @@ public class CKYDecoder {
             }
         }
         return chart[chart.length - 1][0];
+    }
+
+    private Map<String, Set<grammar.Rule>> buildRulesMap(Set<Rule> sRules) {
+        Map<String, Set<Rule>> rulesMap = new HashMap<String, Set<Rule>>();
+        for (grammar.Rule rule : sRules) {
+            if (rulesMap.containsKey(((grammar.Event)rule.getRHS()).toString())) {
+                rulesMap.get(((grammar.Event)rule.getRHS()).toString()).add(rule);
+            } else {
+                Set<Rule> rules = new HashSet<Rule>();
+                rules.add(rule);
+                rulesMap.put(((grammar.Event)rule.getRHS()).toString(), rules);
+            }
+        }
+        return rulesMap;
     }
 
     private void upsertRulesToCellUsingBestProbLogic(Cell cell, Set<Rule> rules, Cell leftChildCell, Cell rightChildCell) {
@@ -69,7 +84,7 @@ public class CKYDecoder {
         }
     }
 
-    private Set<grammar.Rule> RulesBelongToo(Set<grammar.Rule>_sRules, Cell x, Cell y) {
+    private Set<grammar.Rule> RulesBelongToo(Cell x, Cell y, Map<String, Set<grammar.Rule>> rulesMap) {
         HashSet rulesToReturn = new HashSet<grammar.Rule>();
 
         for (grammar.Rule xRule : x.rulesMatches.keySet()) {
@@ -79,14 +94,19 @@ public class CKYDecoder {
                 List<String> bothSymbols = new ArrayList<String>();
                 bothSymbols.addAll(e1);
                 bothSymbols.addAll(e2);
-                for (grammar.Rule resultRule : _sRules) {
+                String key = e1.get(0) + " " + e2.get(0);
 
-                    List<String> e3 = resultRule.getRHS().getSymbols();
-                    if(!rulesToReturn.contains(resultRule) && CompareTwoLists(e3,bothSymbols))
-                    {
-                        rulesToReturn.add(resultRule);
-                    }
+                if (rulesMap.containsKey(key)) {
+                    rulesToReturn.addAll(rulesMap.get(key));
                 }
+//                for (grammar.Rule resultRule : _sRules) {
+//
+//                    List<String> e3 = resultRule.getRHS().getSymbols();
+//                    if(!rulesToReturn.contains(resultRule) && CompareTwoLists(e3,bothSymbols))
+//                    {
+//                        rulesToReturn.add(resultRule);
+//                    }
+//                }
             }
         }
 
@@ -144,7 +164,6 @@ public class CKYDecoder {
     }
 
     private static tree.Node buildTree(CKYDecoder.Cell topCell) {
-        System.out.println(topCell);
         Map.Entry<Rule, CKYDecoder.BestRuleData> bestRule = getBestRule(topCell);
         // it's a terminal
         if (bestRule.getValue().rightChildBackPointer == null && bestRule.getValue().leftChildBackPointer == null) {
