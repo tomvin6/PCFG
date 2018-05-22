@@ -84,6 +84,10 @@ public class CKYDecoder {
         }
     }
 
+//    private void addToMap(HashSet<grammar.Rule> rulesToReturn, Map<String, Set<grammar.Rule>> rulesMap, Set<Rule> rules, String key) {
+//
+//    }
+
     private Set<grammar.Rule> RulesBelongToo(Cell x, Cell y, Map<String, Set<grammar.Rule>> rulesMap) {
         HashSet rulesToReturn = new HashSet<grammar.Rule>();
 
@@ -94,11 +98,16 @@ public class CKYDecoder {
                 List<String> bothSymbols = new ArrayList<String>();
                 bothSymbols.addAll(e1);
                 bothSymbols.addAll(e2);
-                String key = e1.get(0) + " " + e2.get(0);
+                String key = e1.get(0).concat(" ").concat(e2.get(0));
 
                 if (rulesMap.containsKey(key)) {
                     rulesToReturn.addAll(rulesMap.get(key));
                 }
+
+//                if (rulesMap.containsKey(key)) {
+//                    rulesToReturn.addAll(rulesMap.get(key));
+//                }
+
 //                for (grammar.Rule resultRule : _sRules) {
 //
 //                    List<String> e3 = resultRule.getRHS().getSymbols();
