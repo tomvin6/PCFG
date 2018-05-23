@@ -21,6 +21,15 @@ public class CKYDecoder {
         return rules;
     }
 
+//    public class MinimizeCell {
+//        public Set<String> pos;
+//        public MinimizeCell(Set<String> pos) {
+//            this.pos = pos;
+//        }
+//        public MinimizeCell rightChild;
+//        public MinimizeCell leftChild;
+//    }
+
     private Cell runCYK(List<String> words) {
         Map<String, Set<grammar.Rule>> lexRules = this.myGrammer.getLexicalEntries();
         Set<grammar.Rule> _sRules = this.myGrammer.getSyntacticRules();
@@ -45,8 +54,12 @@ public class CKYDecoder {
                     cell = chart[i][j];
                     Cell leftChildCell = chart[k][j];
                     Cell rightChildCell = chart[z][t];
-                    Set<Rule> rules = RulesBelongToo(leftChildCell, rightChildCell, rulesMap);
+                    //
+                    // IF BINARY   ---> HANDLE BINARY CASE-
+                    Set<Rule> rules = minimizeRulesBelongToo(leftChildCell, rightChildCell, rulesMap);
                     upsertRulesToCellUsingBestProbLogic(cell, rules, leftChildCell, rightChildCell);
+                    // TODO IF UNARY - HANDLE BINARY CASE
+
                     z++;
                     t--;
                 }
@@ -71,15 +84,19 @@ public class CKYDecoder {
 
     private void upsertRulesToCellUsingBestProbLogic(Cell cell, Set<Rule> rules, Cell leftChildCell, Cell rightChildCell) {
         for (Rule rule : rules) {
-            if (cell.rulesMatches.containsKey(rule)) {
-                BestRuleData bestRuleData = cell.rulesMatches.get(rule);
+            String leftKey = rule.getLHS().getSymbols().get(0);
+            if (!cell.rulesMatches.containsKey(leftKey)) {
+                cell.rulesMatches.put(leftKey, new HashMap<Rule, BestRuleData>());
+            }
+            if (cell.rulesMatches.get(leftKey).containsKey(rule)) {
+                BestRuleData bestRuleData = cell.rulesMatches.get(leftKey).get(rule);
                 if (rule.getMinusLogProb() < bestRuleData.minusLogProb) {
                     bestRuleData.minusLogProb = rule.getMinusLogProb();
                     bestRuleData.leftChildBackPointer = leftChildCell;
                     bestRuleData.rightChildBackPointer = rightChildCell;
                 }
             } else {
-                cell.rulesMatches.put(rule, new BestRuleData(rule.getMinusLogProb(), leftChildCell, rightChildCell));
+                cell.rulesMatches.get(leftKey).put(rule, new BestRuleData(rule.getMinusLogProb(), leftChildCell, rightChildCell));
             }
         }
     }
@@ -87,38 +104,39 @@ public class CKYDecoder {
 //    private void addToMap(HashSet<grammar.Rule> rulesToReturn, Map<String, Set<grammar.Rule>> rulesMap, Set<Rule> rules, String key) {
 //
 //    }
-
-    private Set<grammar.Rule> RulesBelongToo(Cell x, Cell y, Map<String, Set<grammar.Rule>> rulesMap) {
-        HashSet rulesToReturn = new HashSet<grammar.Rule>();
-
-        for (grammar.Rule xRule : x.rulesMatches.keySet()) {
-            for (grammar.Rule yRule : y.rulesMatches.keySet()) {
-                List<String> e1 = xRule.getLHS().getSymbols();
-                List<String> e2 = yRule.getLHS().getSymbols();
-                List<String> bothSymbols = new ArrayList<String>();
-                bothSymbols.addAll(e1);
-                bothSymbols.addAll(e2);
-                String key = e1.get(0).concat(" ").concat(e2.get(0));
-
-                if (rulesMap.containsKey(key)) {
-                    rulesToReturn.addAll(rulesMap.get(key));
-                }
-
+//    private Set<grammar.Rule> RulesBelongToo(Cell x, Cell y, Map<String, Set<grammar.Rule>> rulesMap) {
+//        HashSet rulesToReturn = new HashSet<grammar.Rule>();
+//
+//        for (grammar.Rule xRule : x.rulesMatches.keySet()) {
+//            for (grammar.Rule yRule : y.rulesMatches.keySet()) {
+//                List<String> e1 = xRule.getLHS().getSymbols();
+//                List<String> e2 = yRule.getLHS().getSymbols();
+//                List<String> bothSymbols = new ArrayList<String>();
+//                bothSymbols.addAll(e1);
+//                bothSymbols.addAll(e2);
+//                String key = e1.get(0).concat(" ").concat(e2.get(0));
+//
 //                if (rulesMap.containsKey(key)) {
 //                    rulesToReturn.addAll(rulesMap.get(key));
 //                }
-
-//                for (grammar.Rule resultRule : _sRules) {
 //
-//                    List<String> e3 = resultRule.getRHS().getSymbols();
-//                    if(!rulesToReturn.contains(resultRule) && CompareTwoLists(e3,bothSymbols))
-//                    {
-//                        rulesToReturn.add(resultRule);
-//                    }
-//                }
+//            }
+//        }
+//
+//        return rulesToReturn;
+//    }
+
+    private Set<grammar.Rule> minimizeRulesBelongToo(Cell x, Cell y, Map<String, Set<grammar.Rule>> rulesMap) {
+        Set<grammar.Rule> rulesToReturn = new HashSet<grammar.Rule>();
+
+        for (String left : x.rulesMatches.keySet()) {
+            for (String right : y.rulesMatches.keySet()) {
+                String key = left.concat(" ").concat(right);
+                if (rulesMap.containsKey(key)) {
+                    rulesToReturn.addAll(rulesMap.get(key));
+                }
             }
         }
-
         return rulesToReturn;
     }
     private boolean CompareTwoLists(List<String> s1, List<String> s2) {
@@ -136,14 +154,20 @@ public class CKYDecoder {
 
     public class Cell {
         public String word;
-        public Map<grammar.Rule, BestRuleData> rulesMatches = new HashMap<Rule, BestRuleData>();
-        public Cell() {}
+        public Map<String, Map<grammar.Rule, BestRuleData>> rulesMatches = new HashMap<String, Map<Rule, BestRuleData>>();
+        public Cell() {
+
+        }
 
         // for lexical initialization
         public Cell(Set<grammar.Rule> rules, String word) {
             this.word = word;
             for (grammar.Rule rule : rules) {
-                rulesMatches.put(rule, new BestRuleData(rule.getMinusLogProb(), null, null));
+                String key = rule.getLHS().getSymbols().get(0);
+                if (!rulesMatches.containsKey(key)) {
+                    rulesMatches.put(key, new HashMap<Rule, BestRuleData>());
+                }
+                rulesMatches.get(key).put(rule, new BestRuleData(rule.getMinusLogProb(), null, null));
             }
         }
 
@@ -162,24 +186,19 @@ public class CKYDecoder {
 
     public tree.Node getTreeIfExist(List<String> words) {
         boolean isLegal = false;
-        Map<Rule, CKYDecoder.BestRuleData> allLegalTopCells = new HashMap<Rule, CKYDecoder.BestRuleData>();
+        Map<String, Map<grammar.Rule, BestRuleData>> allLegalTopCells = new HashMap<String, Map<grammar.Rule, BestRuleData>>();
         Cell topCell = this.runCYK(words);
         // iterate tree
-        for (Map.Entry<Rule, CKYDecoder.BestRuleData> rule : topCell.rulesMatches.entrySet()) {
-            if (((grammar.Event)rule.getKey().getLHS()).getSymbols().get(0).equals("S")) { // legal parse tree
-                allLegalTopCells.put(rule.getKey(), rule.getValue());
-                isLegal = true;
-            }
-        }
-        if (isLegal) {
-            topCell.rulesMatches = allLegalTopCells;
+        if (topCell.rulesMatches.containsKey("S")) {
+            allLegalTopCells.put("S", topCell.rulesMatches.get("S"));
+            topCell.rulesMatches = allLegalTopCells; // override only with legal rules for top cell
             tree.Node root = buildTree(topCell);
             return root;
         }
         return null; // no legal tree
     }
 
-    private static tree.Node buildTree(CKYDecoder.Cell topCell) {
+    private tree.Node buildTree(CKYDecoder.Cell topCell) {
         Map.Entry<Rule, CKYDecoder.BestRuleData> bestRule = getBestRule(topCell);
         // it's a terminal
         if (bestRule.getValue().rightChildBackPointer == null && bestRule.getValue().leftChildBackPointer == null) {
@@ -196,7 +215,7 @@ public class CKYDecoder {
         return parent;
     }
 
-    private static tree.Node MakeNodeContainTerminal(Map.Entry<Rule, CKYDecoder.BestRuleData> bestRule) {
+    private tree.Node MakeNodeContainTerminal(Map.Entry<Rule, CKYDecoder.BestRuleData> bestRule) {
         tree.Node parent = new tree.Node(((grammar.Event)bestRule.getKey().getLHS()).toString(), false, null);
         tree.Node terminal = new tree.Node(((grammar.Event)bestRule.getKey().getRHS()).toString(), false, parent);
         parent.addDaughter(terminal);
@@ -206,15 +225,20 @@ public class CKYDecoder {
     private static Map.Entry<grammar.Rule, CKYDecoder.BestRuleData> getBestRule(CKYDecoder.Cell cell) {
         double bestRuleMinusLogProb = Double.MAX_VALUE; // we need to minimize
         Map.Entry<grammar.Rule, CKYDecoder.BestRuleData> bestRuleData = null;
-        for (Map.Entry<Rule, CKYDecoder.BestRuleData> rule : cell.rulesMatches.entrySet()) {
-            if (rule.getValue().minusLogProb < bestRuleMinusLogProb) {
-                bestRuleMinusLogProb = rule.getValue().minusLogProb;
-                bestRuleData = rule;
+        Collection<Map<Rule, BestRuleData>> setForAllLeftTag = cell.rulesMatches.values();
+        Iterator<Map<Rule, BestRuleData>> iterator = setForAllLeftTag.iterator();
+        while (iterator.hasNext()) {
+            Map<Rule, BestRuleData> next = iterator.next();
+            for (Map.Entry<Rule, CKYDecoder.BestRuleData> rule : next.entrySet()) {
+                if (rule.getValue().minusLogProb < bestRuleMinusLogProb) {
+                    bestRuleMinusLogProb = rule.getValue().minusLogProb;
+                    bestRuleData = rule;
+                }
             }
         }
-        if (bestRuleData == null && !cell.rulesMatches.isEmpty()) { // probably NN word
-            bestRuleData = cell.rulesMatches.entrySet().iterator().next();
-            bestRuleData.getValue().minusLogProb = Math.log(1.0);
+        if (bestRuleData == null && !setForAllLeftTag.isEmpty()) { // probably NN word
+            bestRuleData = setForAllLeftTag.iterator().next().entrySet().iterator().next();
+            bestRuleData.getValue().minusLogProb = Math.log(0.0001);
         }
         return bestRuleData;
     }

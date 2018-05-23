@@ -52,7 +52,7 @@ public class Parse {
 		
 		// 2. transform trees to binary trees
 		Binarizer binarizer = new Binarizer();
-		Treebank myBinaryGoldTreebank = binarizer.binarizeTreebank(myGoldTreebank, 1);
+		//Treebank myBinaryGoldTreebank = binarizer.binarizeTreebank(myGoldTreebank, 1);
 		Treebank myBinaryTrainTreebank = binarizer.binarizeTreebank(myTrainTreebank, 1);
 
 		// method to compare treebanks in order to check that the undo of binarization process finished successfully.
@@ -62,16 +62,20 @@ public class Parse {
 		Grammar myGrammar = Train.getInstance().train(myBinaryTrainTreebank);
 
 		// 4. runCYK
-		List<Tree> myParseTrees = new ArrayList<Tree>();		
-		for (int i = 0; i < myBinaryGoldTreebank.size(); i++) {
-			List<String> mySentence = myBinaryGoldTreebank.getAnalyses().get(i).getYield();
+		List<Tree> myParseTrees = new ArrayList<Tree>();
+		Long startTime = System.currentTimeMillis();
+		for (int i = 0; i < myGoldTreebank.size(); i++) {
+			List<String> mySentence = myGoldTreebank.getAnalyses().get(i).getYield();
 			Tree myParseTree = Decode.getInstance(myGrammar).decode(mySentence);
 			myParseTrees.add(myParseTree);
+			Long thisTime = System.currentTimeMillis();
+			System.out.println("time after sent" + i + " is " + (thisTime - startTime) / 1000);
 		}
 		
 		// 5. de-transform trees
-		Treebank myNotBinaryGoldTreebank = binarizer.undoBinarizeForTreebank(myBinaryGoldTreebank, 1);
-		Treebank myNotBinaryTrainTreebank = binarizer.undoBinarizeForTreebank(myBinaryTrainTreebank, 1);
+		// Treebank myNotBinaryGoldTreebank = binarizer.undoBinarizeForTreebank(myBinaryGoldTreebank, 0);
+
+		//boolean compareResult = binarizer.compareTreebanks(myBinaryGoldTreebank, myNotBinaryGoldTreebank);
 
 		// 6. write output
 		writeOutput(args[2], myGrammar, myParseTrees);	
