@@ -24,7 +24,7 @@ public class CKYDecoder {
     private Cell runCYK(List<String> words) {
         Map<String, Set<grammar.Rule>> lexRules = this.myGrammer.getLexicalEntries();
         Set<grammar.Rule> _sRules = this.myGrammer.getSyntacticRules();
-        Map<String, Set<grammar.Rule>> rulesMap =  buildRulesMap(_sRules);
+        SortedMap<String, Set<grammar.Rule>> rulesMap =  buildRulesMap(_sRules);
         Cell[][] chart = new Cell[words.size()][words.size()];
         // init phase
         for(int i = 0 ; i < words.size() ; i++) {
@@ -55,8 +55,8 @@ public class CKYDecoder {
         return chart[chart.length - 1][0];
     }
 
-    private Map<String, Set<grammar.Rule>> buildRulesMap(Set<Rule> sRules) {
-        Map<String, Set<Rule>> rulesMap = new HashMap<String, Set<Rule>>();
+    private SortedMap<String, Set<grammar.Rule>> buildRulesMap(Set<Rule> sRules) {
+        SortedMap<String, Set<Rule>> rulesMap = new TreeMap<String, Set<Rule>>();
         for (grammar.Rule rule : sRules) {
             if (rulesMap.containsKey(((grammar.Event)rule.getRHS()).toString())) {
                 rulesMap.get(((grammar.Event)rule.getRHS()).toString()).add(rule);
@@ -84,21 +84,35 @@ public class CKYDecoder {
         }
     }
 
-    private Set<grammar.Rule> RulesBelongToo(Cell x, Cell y, Map<String, Set<grammar.Rule>> rulesMap) {
+    public <V> SortedMap<String, V> filterPrefix(SortedMap<String,V> baseMap, String prefix) {
+        if(prefix.length() > 0) {
+            char nextLetter = (char)(prefix.charAt(prefix.length() -1) + 1);
+            String end = prefix.substring(0, prefix.length()-1) + nextLetter + " ";
+            return baseMap.subMap(prefix + " ", end);
+        }
+        return baseMap;
+    }
+
+    private Set<grammar.Rule> RulesBelongToo(Cell x, Cell y, SortedMap<String, Set<grammar.Rule>> rulesMap) {
         HashSet rulesToReturn = new HashSet<grammar.Rule>();
 
-        for (grammar.Rule xRule : x.rulesMatches.keySet()) {
-            for (grammar.Rule yRule : y.rulesMatches.keySet()) {
-                List<String> e1 = xRule.getLHS().getSymbols();
-                List<String> e2 = yRule.getLHS().getSymbols();
-                List<String> bothSymbols = new ArrayList<String>();
-                bothSymbols.addAll(e1);
-                bothSymbols.addAll(e2);
-                String key = e1.get(0) + " " + e2.get(0);
+        if(x.rulesMatches.size() > y.rulesMatches.size()) {
+            for (grammar.Rule xRule : x.rulesMatches.keySet()) {
 
-                if (rulesMap.containsKey(key)) {
-                    rulesToReturn.addAll(rulesMap.get(key));
-                }
+                List<String> e1 = xRule.getLHS().getSymbols();
+                SortedMap<String, Set<grammar.Rule>> filteredRulesMap = filterPrefix(rulesMap, e1.get(0));
+                if (filteredRulesMap.size() > 0) {
+                    for (grammar.Rule yRule : y.rulesMatches.keySet()) {
+
+                        List<String> e2 = yRule.getLHS().getSymbols();
+                        //List<String> bothSymbols = new ArrayList<String>();
+                        //bothSymbols.addAll(e1);
+                        //bothSymbols.addAll(e2);
+                        String key = e1.get(0) + " " + e2.get(0);
+
+                        if (rulesMap.containsKey(key)) {
+                            rulesToReturn.addAll(rulesMap.get(key));
+                        }
 //                for (grammar.Rule resultRule : _sRules) {
 //
 //                    List<String> e3 = resultRule.getRHS().getSymbols();
@@ -107,9 +121,44 @@ public class CKYDecoder {
 //                        rulesToReturn.add(resultRule);
 //                    }
 //                }
+                    }
+                }
             }
         }
+        else
+            {
+                for (grammar.Rule yRule : y.rulesMatches.keySet())
+                {
 
+                    List<String> e2 = yRule.getLHS().getSymbols();
+                    SortedMap<String,Set<grammar.Rule>> filteredRulesMap = filterPrefix(rulesMap,e2.get(0));
+                    if(filteredRulesMap.size() > 0)
+                    {
+                        for (grammar.Rule xRule : x.rulesMatches.keySet()) {
+
+                            List<String> e1 = xRule.getLHS().getSymbols();
+
+                            //List<String> bothSymbols = new ArrayList<String>();
+                            //bothSymbols.addAll(e1);
+                            //bothSymbols.addAll(e2);
+                            String key = e1.get(0) + " " + e2.get(0);
+
+                            if (rulesMap.containsKey(key)) {
+                                rulesToReturn.addAll(rulesMap.get(key));
+                            }
+//                for (grammar.Rule resultRule : _sRules) {
+//
+//                    List<String> e3 = resultRule.getRHS().getSymbols();
+//                    if(!rulesToReturn.contains(resultRule) && CompareTwoLists(e3,bothSymbols))
+//                    {
+//                        rulesToReturn.add(resultRule);
+//                    }
+//                }
+                        }
+                    }
+
+            }
+        }
         return rulesToReturn;
     }
     private boolean CompareTwoLists(List<String> s1, List<String> s2) {

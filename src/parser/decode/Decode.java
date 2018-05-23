@@ -37,12 +37,11 @@ public class Decode {
 	}
     
 	public Tree decode(List<String> input){
-		Tree tree = null;
+		Tree tree = new Tree(new Node("TOP"));
 		tree.Node root = ckyDecoder.getTreeIfExist(input);
 		if (root == null) { // RUN BASELINE
 			// Done: Baseline Decoder
 			//       Returns a flat tree with NN labels on all leaves
-			tree = new Tree(new Node("TOP"));
 			Iterator<String> theInput = input.iterator();
 			while (theInput.hasNext()) {
 				String theWord = (String) theInput.next();
@@ -52,7 +51,7 @@ public class Decode {
 				tree.getRoot().addDaughter(preTerminal);
 			}
 		} else {
-			tree = new Tree(root);
+			tree.getRoot().addDaughter(root);
 		}
 		return tree;
 	}
