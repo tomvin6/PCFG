@@ -55,6 +55,7 @@ public class Train {
         }
         calcLexicalRuleProbabilities(myGrammar);
         calcSyntacticRuleProbabilities(myGrammar);
+         myGrammar.buildRulesMapAndStartingRules();
 //        SyntacticProbWithGoodTuringSmoothing(myGrammar);
 //        calcLexicalGoodTuringSmoothingProbabilities(myGrammar);
         return myGrammar;
@@ -139,7 +140,7 @@ public class Train {
 		for (Rule r : syntacticRules) {
 			if (ruleCounts.containsKey(r)) {
                 double logProb = Math.log(1.0 * ruleCounts.get(r) / nonTerminalsCount.get(((Event)r.getLHS()).toString()));
-                r.setMinusLogProb(logProb != 0 ? -logProb : 0);
+                r.setMinusLogProb(logProb != 0 ? -logProb : -1);
 			}
 		}
     }
@@ -157,7 +158,7 @@ public class Train {
             }
             for (Rule rule : item.getValue()) {
                 double logProb = Math.log(1.0 * ruleCounts.get(rule) / denominator);
-                rule.setMinusLogProb(logProb != 0 ? -logProb : 0);
+                rule.setMinusLogProb(logProb != 0 ? -logProb : -1);
             }
         }
     }
@@ -252,7 +253,7 @@ public class Train {
         myGrammar.addAll(theRules);
         calcLexicalRuleProbabilities(myGrammar);
         calcSyntacticRuleProbabilities(myGrammar);
-
+        myGrammar.buildRulesMapAndStartingRules();
         List<String> words = new ArrayList<String>();
         words.add("a");
         words.add("a");

@@ -26,6 +26,7 @@ public class Grammar {
 	protected Set<String> m_setTerminalSymbols = new HashSet<String>();
 	protected Set<String> m_setNonTerminalSymbols = new HashSet<String>();
 
+	public Map<String, Set<grammar.Rule>> rulesMap;
 	protected Set<Rule> m_setSyntacticRules = new HashSet<Rule>();
 	protected Set<Rule> m_setLexicalRules = new HashSet<Rule>();
 	protected CountMap<Rule> m_cmRuleCounts = new CountMap<Rule>();
@@ -79,7 +80,23 @@ public class Grammar {
 		// update the rule counts 
 		getRuleCounts().increment(r);
 	}
-	
+
+
+	public void buildRulesMapAndStartingRules() {
+		Map<String, Set<grammar.Rule>> rulesMap = new HashMap<String, Set<grammar.Rule>>();
+		for (grammar.Rule rule : m_setSyntacticRules) {
+			if (rulesMap.containsKey(((grammar.Event)rule.getRHS()).toString())) {
+				rulesMap.get(((grammar.Event)rule.getRHS()).toString()).add(rule);
+			} else {
+				Set<grammar.Rule> rules = new HashSet<grammar.Rule>();
+				rules.add(rule);
+				rulesMap.put(((grammar.Event)rule.getRHS()).toString(), rules);
+			}
+		}
+
+		m_setStartSymbols.add("S");
+		this.rulesMap = rulesMap;
+	}
 
 	public Set<String> getNonTerminalSymbols() {
 		return m_setNonTerminalSymbols;
