@@ -52,7 +52,10 @@ public class Decode {
 				tree.getRoot().addDaughter(preTerminal);
 			}
 		} else {
-			tree = new Tree(root);
+			tree.Node node = new Node("TOP");
+			node.setRoot(true);
+			node.addDaughter(root);
+			tree = new Tree(node);
 		}
 		return tree;
 	}

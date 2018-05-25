@@ -3,10 +3,7 @@ package parse;
 import grammar.Grammar;
 import grammar.Rule;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import bracketimport.TreebankReader;
 
@@ -52,10 +49,7 @@ public class Parse {
 		
 		// 2. transform trees to binary trees
 		Binarizer binarizer = new Binarizer();
-		Treebank myBinaryTrainTreebank = binarizer.binarizeTreebank(myTrainTreebank, 1);
-
-		// method to compare treebanks in order to check that the undo of binarization process finished successfully.
-		// boolean compareResult = binarizer.compareTreebanks(myBinaryGoldTreebank, myNotBinaryGoldTreebank);
+		Treebank myBinaryTrainTreebank = binarizer.binarizeTreebank(myTrainTreebank, 0);
 
 		// 3. train
 		Grammar myGrammar = Train.getInstance().train(myBinaryTrainTreebank);
