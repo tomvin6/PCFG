@@ -7,16 +7,20 @@ import java.util.*;
 
 public class Binarizer {
 
-	public boolean compareTreebanks(Treebank treeband1, Treebank treeband2) {
-		for (int i = 0; i < treeband1.size(); i++) {
-			Tree myTree1 = treeband1.getAnalyses().get(i);
-			Tree myTree2 = treeband2.getAnalyses().get(i);
+	public int compareTreebanks(List<Tree> trees1, List<Tree> trees2) {
+		int match = 0;
+		int notMatch = 0;
+		for (int i = 0; i < trees1.size(); i++) {
+			Tree myTree1 = trees1.get(i);
+			Tree myTree2 = trees2.get(i);
 			boolean isEquals = compareTrees(myTree1.getRoot(), myTree2.getRoot());
-			if (isEquals == false) {
-				return false;
+			if (isEquals) {
+				match++;
+			} else {
+				notMatch++;
 			}
 		}
-		return true;
+		return match;
 	}
 
 	private boolean compareTrees(Node a, Node b) {
@@ -46,15 +50,22 @@ public class Binarizer {
 		return transformedTreebank;
 	}
 
-	public Treebank undoBinarizeForTreebank(Treebank treebank, int markovOrder) {
-		Treebank transformedTreebank = new Treebank();
-		for (int i = 0; i < treebank.size(); i++) {
-			Tree myTree = treebank.getAnalyses().get(i);
+//	public Treebank undoBinarizeForTreebank(Treebank treebank, int markovOrder) {
+//		Treebank transformedTreebank = new Treebank();
+//		List<Tree> trees = treebank.getAnalyses();
+//		undoBinarizeForListOfTrees(trees);
+//		return transformedTreebank;
+//	}
+
+	public List<Tree> undoBinarizeForListOfTrees(List<Tree> trees, int markovOrder) {
+		List<Tree> notBinTrees = new LinkedList<Tree>();
+		for (int i = 0; i < trees.size(); i++) {
+			Tree myTree = trees.get(i);
 			tree.Node rootBinaryTreeNode = undoBinarizationForTree(myTree.getRoot());
 			Tree binaryTree = new Tree(rootBinaryTreeNode);
-			transformedTreebank.add(binaryTree);
+			notBinTrees.add(binaryTree);
 		}
-		return transformedTreebank;
+		return notBinTrees;
 	}
 
 	// this method undo binarization process for a single tree

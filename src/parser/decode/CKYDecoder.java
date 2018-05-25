@@ -2,7 +2,6 @@ package parser.decode;
 
 import grammar.Grammar;
 import grammar.Rule;
-import javafx.util.Pair;
 
 import java.util.*;
 
@@ -17,7 +16,7 @@ public class CKYDecoder {
             return lexRules.get(word);
         }
         grammar.Rule rule = new grammar.Rule("NN", word);
-        rule.setMinusLogProb(Math.log(0.001));
+        rule.setMinusLogProb(-Math.log(0.001));
         Set<grammar.Rule> rules = new HashSet<Rule>();
         rules.add(rule);
         return rules;
@@ -56,11 +55,10 @@ public class CKYDecoder {
                     cell = chart[i][j];
                     Cell leftChildCell = chart[k][j];
                     Cell rightChildCell = chart[z][t];
-                    //
+
                     // IF BINARY   ---> HANDLE BINARY CASE-
-                    Set<Rule> rules = minimizeRulesBelongToo(leftChildCell, rightChildCell, rulesMap);
+                    TreepleRules rules = minimizeRulesBelongToo(leftChildCell, rightChildCell, rulesMap);
                     upsertRulesToCellUsingBestProbLogic(cell, rules, leftChildCell, rightChildCell);
-                    // TODO IF UNARY - HANDLE BINARY CASE
 
                     z++;
                     t--;
@@ -84,8 +82,20 @@ public class CKYDecoder {
         return rulesMap;
     }
 
-    private void upsertRulesToCellUsingBestProbLogic(Cell cell, Set<Rule> rules, Cell leftChildCell, Cell rightChildCell) {
-        for (Rule rule : rules) {
+    private void upsertRulesToCellUsingBestProbLogic(Cell cell, TreepleRules rules, Cell leftChildCell, Cell rightChildCell) {
+            for (Rule rule : rules.leftUnaryRules) {
+                String leftKey = rule.getLHS().getSymbols().get(0);
+
+                if (!cell.rulesMatches.containsKey(leftKey)) {
+                    AllLHSRules allLHSRules = new AllLHSRules();
+                    cell.rulesMatches.put(leftKey, allLHSRules);
+                }
+                // key exist
+                cell.rulesMatches.get(leftKey).addSyntRuleWithSameLHS("l", rule, leftChildCell, rightChildCell); // best prob maintained inside
+                cell.segment = leftKey;
+            }
+
+        for (Rule rule : rules.rightUnaryRules) {
             String leftKey = rule.getLHS().getSymbols().get(0);
 
             if (!cell.rulesMatches.containsKey(leftKey)) {
@@ -93,23 +103,58 @@ public class CKYDecoder {
                 cell.rulesMatches.put(leftKey, allLHSRules);
             }
             // key exist
-            cell.rulesMatches.get(leftKey).addRuleWithSameLHS(rule, leftChildCell, rightChildCell); // best prob maintained inside
+            cell.rulesMatches.get(leftKey).addSyntRuleWithSameLHS("r", rule, leftChildCell, rightChildCell); // best prob maintained inside
+            cell.segment = leftKey;
+        }
+
+        for (Rule rule : rules.binaryRules) {
+            String leftKey = rule.getLHS().getSymbols().get(0);
+
+            if (!cell.rulesMatches.containsKey(leftKey)) {
+                AllLHSRules allLHSRules = new AllLHSRules();
+                cell.rulesMatches.put(leftKey, allLHSRules);
+            }
+            // key exist
+            cell.rulesMatches.get(leftKey).addSyntRuleWithSameLHS("s", rule, leftChildCell, rightChildCell); // best prob maintained inside
+            cell.segment = leftKey;
+        }
+
+    }
+
+    public class TreepleRules {
+        Set<grammar.Rule> leftUnaryRules;
+        Set<grammar.Rule> rightUnaryRules;
+        Set<grammar.Rule> binaryRules;
+        public TreepleRules(Set<grammar.Rule> binaryRules,Set<grammar.Rule> leftUnaryRules, Set<grammar.Rule> rightUnaryRules) {
+            this.leftUnaryRules = leftUnaryRules;
+            this.rightUnaryRules = rightUnaryRules;
+            this.binaryRules = binaryRules;
         }
     }
 
+    private TreepleRules minimizeRulesBelongToo(Cell x, Cell y, Map<String, Set<grammar.Rule>> rulesMap) {
+        Set<grammar.Rule> binaryRules = new HashSet<grammar.Rule>();
+        Set<grammar.Rule> leftUnaryRules = new HashSet<grammar.Rule>();
+        Set<grammar.Rule> rightUnaryRules = new HashSet<grammar.Rule>();
 
-    private Set<grammar.Rule> minimizeRulesBelongToo(Cell x, Cell y, Map<String, Set<grammar.Rule>> rulesMap) {
-        Set<grammar.Rule> rulesToReturn = new HashSet<grammar.Rule>();
 
         for (String left : x.rulesMatches.keySet()) {
+            if (rulesMap.containsKey(left)) {
+                leftUnaryRules.addAll(rulesMap.get(left));
+            }
+
             for (String right : y.rulesMatches.keySet()) {
+                if (rulesMap.containsKey(right)) {
+                    rightUnaryRules.addAll(rulesMap.get(right));
+                }
+
                 String key = left.concat(" ").concat(right);
                 if (rulesMap.containsKey(key)) {
-                    rulesToReturn.addAll(rulesMap.get(key));
+                    binaryRules.addAll(rulesMap.get(key));
                 }
             }
         }
-        return rulesToReturn;
+        return new TreepleRules(binaryRules, leftUnaryRules, rightUnaryRules);
     }
     private boolean CompareTwoLists(List<String> s1, List<String> s2) {
         if (s1.size() != s2.size())
@@ -125,52 +170,72 @@ public class CKYDecoder {
     }
 
     public class Cell {
-        public String word;
+        public String segment;
         public Map<String, AllLHSRules> rulesMatches = new HashMap<String, AllLHSRules>();
         public Cell() { }
 
         // for lexical initialization
         public Cell(Set<grammar.Rule> rules, String word) {
-            this.word = word;
+            this.segment = word;
             for (grammar.Rule rule : rules) {
                 String key = rule.getLHS().getSymbols().get(0);
                 if (!rulesMatches.containsKey(key)) {
                     rulesMatches.put(key, new AllLHSRules());
                 }
-                rulesMatches.get(key).addRuleWithSameLHS(rule, null, null);
+                rulesMatches.get(key).addLexRules(rule);
             }
         }
 
     }
     public class AllLHSRules {
         private double bestMinusLogProb = Double.MAX_VALUE; // of all rules that start with the same LHS
-        public Cell leftChildBackPointer, rightChildBackPointer;
+        public Cell leftChildBackPointer = null, rightChildBackPointer = null;
         public Set<Rule> allRulesWithLHS = new HashSet<Rule>();
         public Rule bestRuleWithLHS;
 
         public AllLHSRules() {
         }
 
-        // if a rule with the same LHS is better, update best rule values
-        public void addRuleWithSameLHS(Rule rule, Cell left, Cell right) {
+        public void addLexRules(Rule rule) {
             this.allRulesWithLHS.add(rule);
-            // it's leafs (words segments), best prob is just the prob itself
-            if (left == null || right == null) {
-                if (rule.getMinusLogProb() < this.bestMinusLogProb) {
-                    this.bestMinusLogProb = rule.getMinusLogProb();
-                    this.bestRuleWithLHS = rule;
-                }
-            } else { // internal nodes
-                String r1Key = rule.getRHS().getSymbols().get(0);
-                String r2Key = rule.getRHS().getSymbols().get(1);
-                double bestProbSoFar = rule.getMinusLogProb() + left.rulesMatches.get(r1Key).getBestMinusLogProb() + right.rulesMatches.get(r2Key).getBestMinusLogProb();
-                if (bestProbSoFar < this.bestMinusLogProb) {
-                    this.bestMinusLogProb = bestProbSoFar;
-                    this.leftChildBackPointer = left;
-                    this.rightChildBackPointer = right;
-                    this.bestRuleWithLHS = rule;
-                }
+            if (rule.getMinusLogProb() < this.bestMinusLogProb) {
+                this.bestMinusLogProb = rule.getMinusLogProb();
+                this.bestRuleWithLHS = rule;
             }
+        }
+        // if a rule with the same LHS is better, update best rule values
+        public void addSyntRuleWithSameLHS(String ruleType, Rule rule, Cell left, Cell right) {
+            this.allRulesWithLHS.add(rule);
+            Cell bestLeft = null;
+            Cell bestRight = null;
+            String r1Key = rule.getRHS().getSymbols().get(0);
+            double bestProbSoFar;
+            if (ruleType.equals("l")) { // left unary rule
+                bestProbSoFar = rule.getMinusLogProb() + getKeyOrNNProb(left, r1Key);
+                bestLeft = left;
+            } else if (ruleType.equals("r")) { // right unary rule
+                bestProbSoFar = rule.getMinusLogProb() + getKeyOrNNProb(right, r1Key);
+                bestRight = right;
+            } else { // binary rule
+                String r2Key = rule.getRHS().getSymbols().get(1);
+                bestLeft = left;
+                bestRight = right;
+                bestProbSoFar = getKeyOrNNProb(left, r1Key) + getKeyOrNNProb(right, r2Key);
+            }
+            if (bestProbSoFar < this.bestMinusLogProb) {
+                this.bestMinusLogProb = bestProbSoFar;
+                this.leftChildBackPointer = bestLeft;
+                this.rightChildBackPointer = bestRight;
+                this.bestRuleWithLHS = rule;
+            }
+
+        }
+
+        private double getKeyOrNNProb(Cell child, String r1Key) {
+            if (child.rulesMatches.containsKey(r1Key)) {
+                child.rulesMatches.get(r1Key).getBestMinusLogProb();
+            }
+            return -Math.log(0.0001);
         }
 
         public double getBestMinusLogProb() {
@@ -201,18 +266,23 @@ public class CKYDecoder {
         }
 
         List<tree.Node> children = new LinkedList<tree.Node>();
-        children.add(buildTree(bestRule.leftChildBackPointer));
-        children.add(buildTree(bestRule.rightChildBackPointer));
+        if (bestRule.leftChildBackPointer != null) {
+            children.add(buildTree(bestRule.leftChildBackPointer));
+        }
+        if (bestRule.rightChildBackPointer != null) {
+            children.add(buildTree(bestRule.rightChildBackPointer));
+        }
 
         tree.Node parent = new tree.Node(((grammar.Event)bestRule.bestRuleWithLHS.getLHS()).getSymbols().get(0), false, null, children);
-        children.get(0).setParent(parent);
-        children.get(0).setParent(parent);
+        for (tree.Node child : children) {
+            child.setParent(parent);
+        }
         return parent;
     }
 
     private tree.Node MakeNodeContainTerminal(AllLHSRules bestRule) {
         tree.Node parent = new tree.Node(((grammar.Event)bestRule.bestRuleWithLHS.getLHS()).getSymbols().get(0), false, null);
-        tree.Node terminal = new tree.Node(((grammar.Event)bestRule.bestRuleWithLHS.getRHS()).toString(), false, parent);
+        tree.Node terminal = new tree.Node(((grammar.Event)bestRule.bestRuleWithLHS.getRHS()).getSymbols().get(0), false, parent);
         parent.addDaughter(terminal);
         return parent;
     }
@@ -229,15 +299,7 @@ public class CKYDecoder {
                 bestRuleData = allRulesThatShareLHS;
             }
         }
-        if (bestRuleData == null || sharedLHSRules.isEmpty()) {
-            throw new IllegalArgumentException("should not got here...");
-        }
         return bestRuleData;
-//        if (bestRuleData == null && !sharedLHSRules.isEmpty()) { // probably NN word
-//            bestRuleData = setForAllLeftTag.iterator().next().entrySet().iterator().next();
-//            bestRuleData.getValue().bestMinusLogProb = Math.log(0.0001);
-//        }
-
     }
 }
 
