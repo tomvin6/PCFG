@@ -154,11 +154,22 @@ public class CKYDecoder {
         // if a rule with the same LHS is better, update best rule values
         public void addRuleWithSameLHS(Rule rule, Cell left, Cell right) {
             this.allRulesWithLHS.add(rule);
-            if (rule.getMinusLogProb() < this.bestMinusLogProb) {
-                this.bestMinusLogProb = rule.getMinusLogProb();
-                this.leftChildBackPointer = left;
-                this.rightChildBackPointer = right;
-                this.bestRuleWithLHS = rule;
+            // it's leafs (words segments), best prob is just the prob itself
+            if (left == null || right == null) {
+                if (rule.getMinusLogProb() < this.bestMinusLogProb) {
+                    this.bestMinusLogProb = rule.getMinusLogProb();
+                    this.bestRuleWithLHS = rule;
+                }
+            } else { // internal nodes
+                String r1Key = rule.getRHS().getSymbols().get(0);
+                String r2Key = rule.getRHS().getSymbols().get(1);
+                double bestProbSoFar = rule.getMinusLogProb() + left.rulesMatches.get(r1Key).getBestMinusLogProb() + right.rulesMatches.get(r2Key).getBestMinusLogProb();
+                if (bestProbSoFar < this.bestMinusLogProb) {
+                    this.bestMinusLogProb = bestProbSoFar;
+                    this.leftChildBackPointer = left;
+                    this.rightChildBackPointer = right;
+                    this.bestRuleWithLHS = rule;
+                }
             }
         }
 
