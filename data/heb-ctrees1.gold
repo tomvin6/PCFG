@@ -1,2 +1,1 @@
-(TOP (S (NP (CDT EFRWT) (NP (NN ANFIM))) (VP (VB MGIEIM)) (PP (IN M) (NP (NNP TAILND))) (PP (IN L) (NP (NNP IFRAL))) (SBAR (IN KF) (S (S (NP (PRP HM)) (VP (VB NRFMIM)) (PP (IN K) (NP (NN MTNDBIM)))) (yyCM yyCM) (CC AK) (S (INTJ (ADVP (RB LMEFH))) (VP (VB MFMFIM)) (NP (NP (NN EWBDIM)) (ADJP (JJ FKIRIM)) (ADJP (JJ ZWLIM)))))) (yyDOT yyDOT)))
-(TOP (S (NP (NP (NN TWPEH)) (ADJP (JJ ZW))) (VP (VB HTBRRH)) (ADVP (RB ATMWL)) (PP (IN B) (NP (NP (NP (NNT WWEDT) (NP (NP (H H) (NN EBWDH)) (CC W) (NP (H H) (NN RWWXH)))) (PP (POS FL) (NP (NNPP (H H) (NN KNST))))) (yyCM yyCM) (SBAR (REL F) (S (VP (VB DNH)) (PP (IN B) (NP (NNT NWFA) (NP (NNT HESQT) (NP (NP (NN EWBDIM)) (ADJP (JJ ZRIM)))))))))) (yyDOT yyDOT)))
+(TOP (S (NP (NNP john)) (VP (VB likes) (NP (NNP mary)))))

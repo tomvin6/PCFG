@@ -50,12 +50,17 @@ public class Binarizer {
 		return transformedTreebank;
 	}
 
-//	public Treebank undoBinarizeForTreebank(Treebank treebank, int markovOrder) {
-//		Treebank transformedTreebank = new Treebank();
-//		List<Tree> trees = treebank.getAnalyses();
-//		undoBinarizeForListOfTrees(trees);
-//		return transformedTreebank;
-//	}
+	public Treebank undoBinarizeForTreebank(Treebank treebank, int markovOrder) {
+		Treebank transformedTreebank = new Treebank();
+		List<Tree> trees = treebank.getAnalyses();
+		for (int i = 0; i < trees.size(); i++) {
+			Tree myTree = trees.get(i);
+			tree.Node rootBinaryTreeNode = undoBinarizationForTree(myTree.getRoot());
+			Tree binaryTree = new Tree(rootBinaryTreeNode);
+			transformedTreebank.add(binaryTree);
+		}
+		return transformedTreebank;
+	}
 
 	public List<Tree> undoBinarizeForListOfTrees(List<Tree> trees, int markovOrder) {
 		List<Tree> notBinTrees = new LinkedList<Tree>();

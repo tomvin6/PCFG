@@ -46,7 +46,7 @@ public class Train {
 
 
     public Grammar train(Treebank myTreebank)
-     {
+    {
         Grammar myGrammar = new Grammar();
         for (int i = 0; i < myTreebank.size(); i++) {
             Tree myTree = myTreebank.getAnalyses().get(i);
@@ -124,8 +124,8 @@ public class Train {
     }
 
     private static void calcSyntacticRuleProbabilities(Grammar myGrammar) {
-		Set<Rule> syntacticRules = (Set<Rule>) myGrammar.getSyntacticRules();
-		CountMap<Rule> ruleCounts = (CountMap<Rule>) myGrammar.getRuleCounts();
+        Set<Rule> syntacticRules = (Set<Rule>) myGrammar.getSyntacticRules();
+        CountMap<Rule> ruleCounts = (CountMap<Rule>) myGrammar.getRuleCounts();
         CountMap<String> nonTerminalsCount = new CountMap<String>();
         // count non terminals for denominators
         for (Map.Entry<Rule, Integer> ruleCount: ruleCounts.entrySet()) {
@@ -136,40 +136,38 @@ public class Train {
                 nonTerminalsCount.put(((Event)ruleCount.getKey().getLHS()).toString(), ruleCount.getValue());
             }
         }
-		for (Rule r : syntacticRules) {
-			if (ruleCounts.containsKey(r)) {
+        for (Rule r : syntacticRules) {
+            if (ruleCounts.containsKey(r)) {
                 double logProb = Math.log(1.0 * ruleCounts.get(r) / nonTerminalsCount.get(((Event)r.getLHS()).toString()));
                 r.setMinusLogProb(logProb != 0 ? -logProb : 0);
-			}
-		}
+            }
+        }
     }
 
     private static void calcLexicalRuleProbabilities(Grammar grammar) {
         Map<String, Set<Rule>> lexicalEntries = grammar.getLexicalEntries();
         CountMap<Rule> ruleCounts = (CountMap<Rule>) grammar.getRuleCounts();
-        int denominator = 0;
-        for (Map.Entry<String, Set<Rule>> item : lexicalEntries.entrySet()) {
-            denominator = 0;
-            for (Rule rule : item.getValue()) {
-                if (ruleCounts.containsKey(rule)) {
-                    denominator += ruleCounts.get(rule);
+        Set<String> nonTerminalSymbols = grammar.getNonTerminalSymbols();
+        CountMap<String> denominators = new CountMap<String>();
+        for (String nonTerminal : nonTerminalSymbols) {
+            int denominator = 0;
+            for (Map.Entry<Rule, Integer> rule : ruleCounts.entrySet()) {
+                if (((Event)rule.getKey().getLHS()).getSymbols().get(0).equals(nonTerminal)) {
+                    denominator += rule.getValue();
                 }
             }
-            for (Rule rule : item.getValue()) {
-                double logProb = Math.log(1.0 * ruleCounts.get(rule) / denominator);
+            denominators.put(nonTerminal, denominator);
+        }
+
+        for (Set<Rule> rulesWithSameWordSegment : lexicalEntries.values()) {
+            for (Rule rule : rulesWithSameWordSegment) {
+                int nominator = ruleCounts.get(rule);
+                int denominator = denominators.get(((Event)rule.getLHS()).getSymbols().get(0));
+                double logProb = Math.log(1.0 * nominator / denominator);
                 rule.setMinusLogProb(logProb != 0 ? -logProb : 0);
             }
         }
     }
-
-//	private Integer getDenominator(CountMap<Rule> ruleCounts, String key, Set<String> nonTerminalSymbols) {
-//		Integer sum = 0;
-//		for (String nonTerminal : nonTerminalSymbols) {
-//			Integer ruleCount = ruleCounts.get(new Rule(key, nonTerminal));
-//			sum += ruleCount;
-//		}
-//		return sum;
-//	}
 
 
     public List<Rule> getRules(Tree myTree)

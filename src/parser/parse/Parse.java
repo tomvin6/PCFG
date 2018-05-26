@@ -49,7 +49,8 @@ public class Parse {
 		
 		// 2. transform trees to binary trees
 		Binarizer binarizer = new Binarizer();
-		Treebank myBinaryTrainTreebank = binarizer.binarizeTreebank(myTrainTreebank, 0);
+		Treebank myBinaryTrainTreebank = binarizer.binarizeTreebank(myTrainTreebank, 1);
+        Treebank myNOTBinaryTrainTreebank = binarizer.undoBinarizeForTreebank(myBinaryTrainTreebank, 0);
 
 		// 3. train
 		Grammar myGrammar = Train.getInstance().train(myBinaryTrainTreebank);

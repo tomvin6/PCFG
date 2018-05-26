@@ -68,6 +68,43 @@ public class CKYDecoder {
         return chart[chart.length - 1][0];
     }
 
+    private Cell runNewCYK(List<String> words) {
+        Map<String, Set<grammar.Rule>> lexRules = this.myGrammer.getLexicalEntries();
+        Set<grammar.Rule> _sRules = this.myGrammer.getSyntacticRules();
+        Map<String, Set<grammar.Rule>> rulesMap =  buildRulesMap(_sRules);
+        Cell[][] chart = new Cell[words.size()][words.size()];
+        // init phase
+        for(int i = 0 ; i < words.size() ; i++) {
+            chart[0][i] = new Cell(getLexRuleOrNN(lexRules, words.get(i)), words.get(i));
+        }
+
+        // get all rules for the table
+        for(int i = 1; i < chart.length; i++) {
+            for(int j = 0 ; j <chart.length - i; j++) {
+                int z = 0;
+                int t = i + j;
+                for(int k = i - 1; k >= 0 && z < i && t >= 0; k-- ) {
+                    Cell cell;
+                    if(chart[i][j] == null) {
+                        cell = new Cell();
+                        chart[i][j] = cell;
+                    }
+                    cell = chart[i][j];
+                    Cell leftChildCell = chart[k][j];
+                    Cell rightChildCell = chart[z][t];
+
+                    // IF BINARY   ---> HANDLE BINARY CASE-
+                    TreepleRules rules = minimizeRulesBelongToo(leftChildCell, rightChildCell, rulesMap);
+                    upsertRulesToCellUsingBestProbLogic(cell, rules, leftChildCell, rightChildCell);
+
+                    z++;
+                    t--;
+                }
+            }
+        }
+        return chart[chart.length - 1][0];
+    }
+
     private Map<String, Set<grammar.Rule>> buildRulesMap(Set<Rule> sRules) {
         Map<String, Set<Rule>> rulesMap = new HashMap<String, Set<Rule>>();
         for (grammar.Rule rule : sRules) {
@@ -247,7 +284,7 @@ public class CKYDecoder {
     public tree.Node getTreeIfExist(List<String> words) {
         boolean isLegal = false;
         Map<String, AllLHSRules> allLegalTopCells = new HashMap<String, AllLHSRules>();
-        Cell topCell = this.runCYK(words);
+        Cell topCell = this.runNewCYK(words);
         // iterate tree
         if (topCell.rulesMatches.containsKey("S")) {
             allLegalTopCells.put("S", topCell.rulesMatches.get("S"));
