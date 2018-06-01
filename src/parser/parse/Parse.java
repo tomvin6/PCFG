@@ -49,8 +49,7 @@ public class Parse {
 		
 		// 2. transform trees to binary trees
 		Binarizer binarizer = new Binarizer();
-		Treebank myBinaryTrainTreebank = binarizer.binarizeTreebank(myTrainTreebank, 1);
-        Treebank myNOTBinaryTrainTreebank = binarizer.undoBinarizeForTreebank(myBinaryTrainTreebank, 0);
+		Treebank myBinaryTrainTreebank = binarizer.binarizeTreebank(myTrainTreebank, 2);
 
 		// 3. train
 		Grammar myGrammar = Train.getInstance().train(myBinaryTrainTreebank);
@@ -63,13 +62,15 @@ public class Parse {
 			Tree myParseTree = Decode.getInstance(myGrammar).decode(mySentence);
 			myParseTrees.add(myParseTree);
 			Long thisTime = System.currentTimeMillis();
-			System.out.println("time after sent " + (i + 1) + " is " + (thisTime - startTime) / 1000 + " seconds");
+			if (i % 100 == 0) {
+				System.out.println("time after sent " + (i + 1) + " is " + (thisTime - startTime) / 1000 + " seconds");
+			}
 		}
 		
 		// 5. de-transform trees
-        List<Tree> trees = binarizer.undoBinarizeForListOfTrees(myParseTrees, 1);
+        List<Tree> trees = binarizer.undoBinarizeForListOfTrees(myParseTrees, 2);
 
-        int compareResult = binarizer.compareTreebanks(trees, myGoldTreebank.getAnalyses());
+        // int compareResult = binarizer.compareTreebanks(trees, myGoldTreebank.getAnalyses());
 
 		// 6. write output
 		writeOutput(args[2], myGrammar, myParseTrees);	

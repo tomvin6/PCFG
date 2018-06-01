@@ -7,7 +7,6 @@ import grammar.Rule;
 
 import java.util.*;
 
-import parser.decode.CKYDecoder;
 import tree.Node;
 import tree.Tree;
 import treebank.Treebank;
@@ -53,10 +52,10 @@ public class Train {
             List<Rule> theRules = getRules(myTree);
             myGrammar.addAll(theRules);
         }
-        calcLexicalRuleProbabilities(myGrammar);
-        calcSyntacticRuleProbabilities(myGrammar);
-//        SyntacticProbWithGoodTuringSmoothing(myGrammar);
-//        calcLexicalGoodTuringSmoothingProbabilities(myGrammar);
+//        calcLexicalRuleProbabilities(myGrammar);
+//        calcSyntacticRuleProbabilities(myGrammar);
+        SyntacticProbWithGoodTuringSmoothing(myGrammar);
+        calcLexicalGoodTuringSmoothingProbabilities(myGrammar);
         return myGrammar;
     }
 

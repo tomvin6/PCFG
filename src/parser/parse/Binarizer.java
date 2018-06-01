@@ -43,8 +43,8 @@ public class Binarizer {
 		Treebank transformedTreebank = new Treebank();
 		for (int i = 0; i < treebank.size(); i++) {
 			Tree myTree = treebank.getAnalyses().get(i);
-			tree.Node rootBinaryTreeNode = binarizeTree(myTree.getRoot(), markovOrder);
-			Tree binaryTree = new Tree(rootBinaryTreeNode);
+			binarizeTree(myTree.getRoot(), markovOrder);
+			Tree binaryTree = new Tree(myTree.getRoot());
 			transformedTreebank.add(binaryTree);
 		}
 		return transformedTreebank;
@@ -55,8 +55,8 @@ public class Binarizer {
 		List<Tree> trees = treebank.getAnalyses();
 		for (int i = 0; i < trees.size(); i++) {
 			Tree myTree = trees.get(i);
-			tree.Node rootBinaryTreeNode = undoBinarizationForTree(myTree.getRoot());
-			Tree binaryTree = new Tree(rootBinaryTreeNode);
+			undoBinarizationForTree(myTree.getRoot());
+			Tree binaryTree = new Tree(myTree.getRoot());
 			transformedTreebank.add(binaryTree);
 		}
 		return transformedTreebank;
@@ -66,58 +66,72 @@ public class Binarizer {
 		List<Tree> notBinTrees = new LinkedList<Tree>();
 		for (int i = 0; i < trees.size(); i++) {
 			Tree myTree = trees.get(i);
-			tree.Node rootBinaryTreeNode = undoBinarizationForTree(myTree.getRoot());
-			Tree binaryTree = new Tree(rootBinaryTreeNode);
+			undoBinarizationForTree(myTree.getRoot());
+			Tree binaryTree = new Tree(myTree.getRoot());
 			notBinTrees.add(binaryTree);
 		}
 		return notBinTrees;
 	}
 
 	// this method undo binarization process for a single tree
-	private Node undoBinarizationForTree(Node root) {
-		if (root.getDaughters().isEmpty()) {
-			return new Node(root.getIdentifier(), root.isRoot(), root.getParent(), root.getDaughters());
+	private void undoBinarizationForTree(Node node) {
+		for (int i=node.getDaughters().size()-1;i>=0;i--){
+			undoBinarizationForTree(node.getDaughters().get(i));
 		}
-		Node newRoot = new Node(root.getIdentifier(), root.isRoot(), root.getParent());
-		for (Node child : root.getDaughters()) {
-			Node originalChildSubTree = undoBinarizationForTree(child);
-			if (originalChildSubTree.getIdentifier().startsWith("@")) {
-				for (Node subTreeChild : originalChildSubTree.getDaughters()) {
-					newRoot.addDaughter(subTreeChild);
-				}
-			} else {
-				newRoot.addDaughter(originalChildSubTree);
+		if (node.getIdentifier().contains("@")){
+			for (Node daughter:node.getDaughters()){
+				node.getParent().addDaughter(daughter);
+				daughter.setParent(node);
 			}
+			node.getParent().removeDaughter(node);
 		}
-		return newRoot;
 	}
 
-	private Node binarizeTree(Node root, int markovModel) {
-		// if root has no children or only one child, we are already
-		// in binary mode, return the new nodes
-		if (root.getDaughters().isEmpty() || root.getDaughters().size() == 1) {
-			Node newNode = new Node(root.getIdentifier(), root.isRoot(), root.getParent());
+	private void binarizeTree(Node node, int model) {
+		if (node.getDaughters().size() > 2) {
+			boolean hMarcov = model > -1;
+			Node tempParent = node;
 
-			if (!root.getDaughters().isEmpty()) { // single child case
-				Node childrenNode = binarizeTree(root.getDaughters().get(0), markovModel);
-				newNode.addDaughter(childrenNode);
-				childrenNode.setParent(newNode);
+			//Cloning is required since we are changing the original list during the loop
+			List<Node> daughters=new ArrayList<>(node.getDaughters());
+			LinkedList<String> labels = new LinkedList<>();
+			if (model != 0)
+				labels.add(daughters.get(0).getIdentifier());
 
+			for (Node next:daughters.subList(1, daughters.size()-1)){
+				String labelStr = (hMarcov ? "/" : "") + joinner(labels)
+						+ (hMarcov ? "/" : "");
+				Node subNode = new Node(labelStr + "@" + node.getIdentifier());
+				subNode.addDaughter(next);
+				node.removeDaughter(next);
+				tempParent.addDaughter(subNode);
+				tempParent = subNode;
+				labels.add(next.getIdentifier());
+				if (hMarcov && labels.size() > model) {
+					labels.removeFirst();
+				}
 			}
-			return newNode; // single child OR leaf case
+			Node lastDaughter=daughters.get(daughters.size()-1);
+			tempParent.addDaughter(lastDaughter);
+			node.removeDaughter(lastDaughter);
 		}
-		// if we have exactly two children, handle each and return parent
-		if (root.getDaughters().size() == 2) {
-			List<tree.Node> binaryChildren = new LinkedList<tree.Node>();
-			Node newNode = new tree.Node(root.getIdentifier(), root.isRoot(), root.getParent(), binaryChildren);
-			for (Node child : root.getDaughters()) {
-				Node node = binarizeTree(child, markovModel);
-				node.setParent(newNode);
-				binaryChildren.add(node);
-			}
-			return newNode;
-		} else {
-			return handleMultipleCase(root, 0, root.getIdentifier() + "", markovModel);
+		for (Node daughter : node.getDaughters()) {
+			binarizeTree(daughter, model);
+		}
+	}
+
+	private String joinner(List<String> str) {
+		Iterator<String> it = str.iterator();
+		if (!it.hasNext())
+			return "";
+
+		StringBuilder sb = new StringBuilder();
+		for (;;) {
+			String e = it.next();
+			sb.append(e);
+			if (!it.hasNext())
+				return sb.toString();
+			sb.append(',');
 		}
 	}
 
@@ -138,29 +152,29 @@ public class Binarizer {
 		return "@" + root.getIdentifier() + "/" + markovSiblingBuilder.toString();
 	}
 
-	private tree.Node handleMultipleCase(tree.Node root, int childNumber, String originalParentName, int markovModel) {
-		// handle left child and attach as left subtree
-		List<tree.Node> binaryChildren = new LinkedList<tree.Node>();
-		tree.Node leftChild = root.getDaughters().get(childNumber);
-		binaryChildren.add(binarizeTree(leftChild, markovModel));
-		// handle right child and attach as right sub tree
-		int totalChildren = root.getDaughters().size();
-		int nextChildForHandling = childNumber + 1;
-		if (childNumber < totalChildren - 1) { // exist right child
-			tree.Node rightChild = handleMultipleCase(root, nextChildForHandling, originalParentName, markovModel);
-			binaryChildren.add(rightChild);
-		}
-		// if we have only one child, return it
-		if (binaryChildren.size() == 1) {
-			return binaryChildren.get(0);
-		} else { // create an internal node to hold left and right children
-			Node newNode;
-			newNode = new tree.Node(getNewNodeName(root, childNumber, markovModel), root.isRoot(), root.getParent(), binaryChildren);
-			binaryChildren.get(0).setParent(newNode); // update children parents
-			binaryChildren.get(1).setParent(newNode);
-			return newNode;
-		}
-	}
+//	private tree.Node handleMultipleCase(tree.Node root, int childNumber, String originalParentName, int markovModel) {
+//		// handle left child and attach as left subtree
+//		List<tree.Node> binaryChildren = new LinkedList<tree.Node>();
+//		tree.Node leftChild = root.getDaughters().get(childNumber);
+//		binaryChildren.add(binarizeTree(leftChild, markovModel));
+//		// handle right child and attach as right sub tree
+//		int totalChildren = root.getDaughters().size();
+//		int nextChildForHandling = childNumber + 1;
+//		if (childNumber < totalChildren - 1) { // exist right child
+//			tree.Node rightChild = handleMultipleCase(root, nextChildForHandling, originalParentName, markovModel);
+//			binaryChildren.add(rightChild);
+//		}
+//		// if we have only one child, return it
+//		if (binaryChildren.size() == 1) {
+//			return binaryChildren.get(0);
+//		} else { // create an internal node to hold left and right children
+//			Node newNode;
+//			newNode = new tree.Node(getNewNodeName(root, childNumber, markovModel), root.isRoot(), root.getParent(), binaryChildren);
+//			binaryChildren.get(0).setParent(newNode); // update children parents
+//			binaryChildren.get(1).setParent(newNode);
+//			return newNode;
+//		}
+//	}
 
 //	private String getHorizontalMarkovAnnotation(String parent, String sibling, int markovOrder) {
 //		if (markovOrder == 0) {
