@@ -37,7 +37,7 @@ public class Parse {
 		//*     Point-of-Entry     *//
 		//**************************//
 		
-		if (args.length < 3)
+		if (args.length < 4)
 		{
 			System.out.println("Usage: Parse <goldset> <trainset> <experiment-identifier-string>");
 			return;
@@ -49,7 +49,7 @@ public class Parse {
 		
 		// 2. transform trees to binary trees
 		Binarizer binarizer = new Binarizer();
-		Treebank myBinaryTrainTreebank = binarizer.binarizeTreebank(myTrainTreebank, 2);
+		Treebank myBinaryTrainTreebank = binarizer.binarizeTreebank(myTrainTreebank, Integer.valueOf(args[3]));
 
 		// 3. train
 		Grammar myGrammar = Train.getInstance().train(myBinaryTrainTreebank);
