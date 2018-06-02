@@ -89,7 +89,7 @@ public class Binarizer {
 
 	private void binarizeTree(Node node, int model) {
 		if (node.getDaughters().size() > 2) {
-			boolean hMarcov = model > -1;
+			boolean hForModel = model > -1;
 			Node tempParent = node;
 
 			//Cloning is required since we are changing the original list during the loop
@@ -99,15 +99,15 @@ public class Binarizer {
 				labels.add(daughters.get(0).getIdentifier());
 
 			for (Node next:daughters.subList(1, daughters.size()-1)){
-				String labelStr = (hMarcov ? "/" : "") + joinner(labels)
-						+ (hMarcov ? "/" : "");
+				String labelStr = (hForModel ? "/" : "") + joinner(labels)
+						+ (hForModel ? "/" : "");
 				Node subNode = new Node(labelStr + "@" + node.getIdentifier());
 				subNode.addDaughter(next);
 				node.removeDaughter(next);
 				tempParent.addDaughter(subNode);
 				tempParent = subNode;
 				labels.add(next.getIdentifier());
-				if (hMarcov && labels.size() > model) {
+				if (hForModel && labels.size() > model) {
 					labels.removeFirst();
 				}
 			}

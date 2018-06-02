@@ -53,10 +53,11 @@ public class Train {
             List<Rule> theRules = getRules(myTree);
             myGrammar.addAll(theRules);
         }
-//        calcLexicalRuleProbabilities(myGrammar);
-//        calcSyntacticRuleProbabilities(myGrammar);
-        ruleProbWithGoodTuringSmoothing(myGrammar.getSyntacticRules(), (CountMap<Rule>) myGrammar.getRuleCounts());
-        ruleProbWithGoodTuringSmoothing(myGrammar.getLexicalRules(), (CountMap<Rule>) myGrammar.getRuleCounts());
+        calcLexicalRuleProbabilities(myGrammar);
+        calcSyntacticRuleProbabilities(myGrammar);
+         // IN ORDER TO ENABLE SMOOTHING
+        // ruleProbWithGoodTuringSmoothing(myGrammar.getSyntacticRules(), (CountMap<Rule>) myGrammar.getRuleCounts());
+        // ruleProbWithGoodTuringSmoothing(myGrammar.getLexicalRules(), (CountMap<Rule>) myGrammar.getRuleCounts());
         return myGrammar;
     }
     // for seen events

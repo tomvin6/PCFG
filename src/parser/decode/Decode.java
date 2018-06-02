@@ -178,7 +178,7 @@ public class Decode {
 			} while (added);
 		}
 
-		// printChart(chart);
+
 		for (int i = 2; i <= input.size(); i++) { // row
 
 			for (int j = i - 2; j >= 0; j--) { // col
@@ -220,11 +220,44 @@ public class Decode {
 				}
 			}
 		}
+		return backtrack(chart, input);
+	}
+
+	private tree.Tree improvedBacktrack(ChartCell[][] chart, List<String> input) {
 		Cell start = null;
-		for (Cell tp : chart[0][input.size()].values()) {
-			if (tp.event.toString().equals("S")) {
-				if (start == null || start.getMinusLogProb() > tp.getMinusLogProb())
-					start = tp;
+		// look for S symbol
+		for (Cell cell : chart[0][input.size()].values()) {
+			if (cell.event.toString().equals("S")) {
+				if (start == null || start.getMinusLogProb() > cell.getMinusLogProb())
+					start = cell;
+			}
+		}
+		if (start == null) {
+			for (Cell cell : chart[0][input.size()].values()) {
+				if (start == null || start.getMinusLogProb() > cell.getMinusLogProb())
+					start = cell;
+			}
+		}
+		Node top = new Node("TOP");
+		Node s = new Node("S");
+		s.setParent(top);
+		top.addDaughter(s);
+		if (start == null) {
+			return new Tree(top);
+		}
+		buildTree(s, start);
+		Tree tree = new Tree(top);
+		// printChart(chart);
+		return tree;
+	}
+
+	private tree.Tree backtrack(ChartCell[][] chart, List<String> input) {
+		Cell start = null;
+		// look for S symbol
+		for (Cell cell : chart[0][input.size()].values()) {
+			if (cell.event.toString().equals("S")) {
+				if (start == null || start.getMinusLogProb() > cell.getMinusLogProb())
+					start = cell;
 			}
 		}
 		if (start == null)
@@ -238,6 +271,7 @@ public class Decode {
 		// printChart(chart);
 		return tree;
 	}
+
 
 	private void buildTree(Node node, Cell tp) {
 		node.setIdentifier(tp.getEvent().toString());
